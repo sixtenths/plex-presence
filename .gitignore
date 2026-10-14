@@ -10,6 +10,7 @@ upstream/
 /bridge.py
 /discord_presence.py
 /pause_guard.py
+/end_guard.py
 /plex.py
 /setup.html
 /setup.js

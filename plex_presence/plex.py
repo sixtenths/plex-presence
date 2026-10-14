@@ -224,6 +224,9 @@ class PlexWatcher:
         eligible = []
         for item in sessions:
             state = _text(_object(item.get("Player")).get("state")).casefold()
+            duration = _integer(item.get("duration"))
+            if duration and _integer(item.get("viewOffset")) >= max(1, duration - 250):
+                continue
             if self._matches(item) and item.get("type") in _MEDIA_TYPES and state in _STATE_ORDER:
                 eligible.append((item, state))
         if not eligible:

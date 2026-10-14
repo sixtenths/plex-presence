@@ -9,6 +9,7 @@ from .discord_presence import DiscordPresence
 from .oauth import DiscordAuth
 from .plex import PlexWatcher, PlexError
 from .plex_account import PlexAccount
+from .playback import activity_finished
 from .storage import read_json, save_private
 
 
@@ -192,12 +193,15 @@ class Service:
             except PlexError:
                 state = "unavailable"
         if activity:
-            if not show_progress:
-                activity.pop("timestamps", None)
             if use_artwork:
                 activity = artwork.enrich(activity)
             else:
                 activity.pop("assets", None)
+            if activity_finished(activity):
+                activity = None
+                state = "idle"
+            elif not show_progress:
+                activity.pop("timestamps", None)
         with self.lock:
             if generation != self.generation:
                 self.wake.set()

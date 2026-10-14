@@ -107,7 +107,7 @@ class PlexWatcherTests(TestCase):
 
     def test_progress_is_clamped_and_numeric_strings_supported(self):
         activity, _ = self.poll_bytes(payload(movie(duration="10000", viewOffset="25000")))
-        self.assertEqual(activity["timestamps"], {"start": 1699999990000, "end": 1700000000000})
+        self.assertIsNone(activity)
         activity, _ = self.poll_bytes(payload(movie(duration="10000", viewOffset=-800)))
         self.assertEqual(activity["timestamps"], {"start": 1700000000000, "end": 1700000010000})
         activity, _ = self.poll_bytes(payload(movie(duration=None, viewOffset="invalid")))
