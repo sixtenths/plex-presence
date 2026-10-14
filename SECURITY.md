@@ -1,0 +1,15 @@
+# Security and privacy
+
+Do not post Plex tokens, Discord OAuth tokens, configuration files, or full authorization URLs in issues. Report a problem without credentials or account data first. For a sensitive vulnerability, use GitHub's private vulnerability reporting if enabled for this repository.
+
+The GUI binds only to 127.0.0.1. Requests that modify settings require the expected Origin and a per-process CSRF token. Do not expose it using a reverse proxy or port forwarding to the internet. For a remote machine, use an SSH local tunnel.
+
+Credentials are saved in the operating system's per-user application directory, with restrictive file permissions where supported. They are not encrypted with an OS keychain. Anyone who can read these files as your user can access the linked accounts. Keep the directory private and avoid syncing it to public storage.
+
+Discord uses OAuth with PKCE, a public client, and the Social SDK presence scope. No Discord account password, client secret, or raw account token is requested. The presence scope includes additional permissions granted by Discord; review the consent screen before connecting. Disconnecting removes local tokens after clearing presence. Revoke the application in Discord's Authorized Apps settings to revoke its grant remotely.
+
+Plex tokens are sent only to Plex account services and the chosen Plex server. Automatic server selection checks the server identity. An explicitly entered HTTP server URL sends its token without TLS on that network; use HTTPS or a trusted local network. Shared-server access may not include permission to read active playback sessions.
+
+Optional artwork sends a public poster URL to images.weserv.nl (`wsrv.nl`) and Discord. It does not upload private Plex files or include Plex credentials in image URLs. Disable artwork in the GUI to avoid that image proxy. There is no telemetry or central Plex Presence backend.
+
+The no-client Discord publishing endpoint is undocumented and may change or stop working. This project is experimental and cannot guarantee ongoing access or service availability.

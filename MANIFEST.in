@@ -1,0 +1,11 @@
+include README.md LICENSE NOTICE.md SECURITY.md run.py
+recursive-include plex_presence *.py *.html *.css *.js
+recursive-include tests_public *.py
+recursive-include packaging *.py
+recursive-include docs *.png
+prune tests
+prune .local
+prune .codex-remote-attachments
+prune upstream
+prune deploy
+global-exclude __pycache__ *.pyc
