@@ -1,5 +1,5 @@
 #ifndef AppVersion
-  #define AppVersion "0.3.1"
+  #define AppVersion "0.3.2"
 #endif
 [Setup]
 AppId={{904AB196-A338-49D3-98D4-E038923F42A0}
@@ -38,3 +38,24 @@ Name: "{userstartup}\Plex Presence"; Filename: "{app}\PlexPresence.exe"; Paramet
 
 [Run]
 Filename: "{app}\PlexPresence.exe"; Description: "Launch Plex Presence"; Flags: nowait postinstall skipifsilent
+
+[Messages]
+ConfirmUninstall=Do you want to remove %1 and permanently delete its saved accounts, settings, and downloaded updates?
+
+[Code]
+procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
+var
+  ExitCode: Integer;
+  Cleaned: Boolean;
+begin
+  if CurUninstallStep <> usUninstall then
+    Exit;
+  Cleaned := Exec(ExpandConstant('{app}\PlexPresence.exe'), '--uninstall-data',
+    ExpandConstant('{app}'), SW_HIDE, ewWaitUntilTerminated, ExitCode);
+  if Cleaned then
+    Cleaned := ExitCode = 0;
+  if not Cleaned then begin
+    SuppressibleMsgBox('Plex Presence could not finish removing its saved data. Close the app and try uninstalling again. No program files have been removed.', mbError, MB_OK, IDOK);
+    Abort;
+  end;
+end;

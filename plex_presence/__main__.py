@@ -37,10 +37,18 @@ def main():
     parser.add_argument("--version", action="version", version=__version__)
     parser.add_argument("--data-dir", type=Path, default=data_directory())
     parser.add_argument("--port", type=int, default=8765)
+    parser.add_argument("--uninstall-data", action="store_true", help=argparse.SUPPRESS)
     modes = parser.add_mutually_exclusive_group()
     modes.add_argument("--no-browser", action="store_true", help="Run headlessly; use an SSH tunnel to access web setup")
     modes.add_argument("--background", action="store_true", help="Start the desktop app with its window hidden")
     args = parser.parse_args()
+    if args.uninstall_data:
+        from .uninstall import uninstall_data
+        try:
+            uninstall_data()
+            return 0
+        except (OSError, ValueError, KeyError):
+            return 1
     if not 1024 <= args.port <= 65535:
         parser.error("Port must be between 1024 and 65535.")
     instance = None
@@ -48,6 +56,8 @@ def main():
         instance = InstanceLock(args.data_dir)
         service = Service(args.data_dir, args.port)
         server = make_server(service)
+        from .uninstall import register_data
+        register_data(service)
     except (OSError, ValueError):
         if instance:
             instance.close()
