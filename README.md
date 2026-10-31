@@ -6,7 +6,7 @@ Show your Plex playback on your own Discord profile, in a **native desktop appli
 
 ![Native Plex Presence playback view](docs/screenshots/playback.png)
 
-The native window above is rendered with example playback data. See [first-time setup](docs/screenshots/overview-setup.png), [connections](docs/screenshots/connections.png), [preferences](docs/screenshots/preferences.png), and the [built-in guide](docs/screenshots/guide.png).
+The native window above is rendered with example playback data. [Explore the app screenshots below](#screenshots) or [download the full screenshot pack](https://github.com/sixtenths/plex-presence/releases/download/v0.2.0/PlexPresence-v0.2.0-screenshots.zip).
 
 **Experimental:** Discord's OAuth permission is documented, but the headless presence publishing endpoint is not a stable public API. Discord may change or disable it. Always-on mode requires your own Discord application and Social SDK; desktop mode does not. This independent community project is inspired by [phin05/discord-rich-presence-plex](https://github.com/phin05/discord-rich-presence-plex).
 
@@ -49,6 +49,35 @@ Launching Plex Presence opens its own desktop window. Closing that window hides 
 The Windows installer enables **Start when I sign in** by default; you can uncheck it during installation or disable Plex Presence in Windows Startup apps. Startup uses `--background`, which keeps the desktop window hidden until you open it. Right-click the tray icon for **Open settings / setup guide** or **Quit Plex Presence**. Launching the Start menu shortcut again brings the existing application window back. macOS/Linux users can configure login startup using their OS or service manager.
 
 Plex sign-in and Always-on Discord authorization still use the provider's website in your usual browser. After approving, return to the Plex Presence window. The local callback address is used for authorization; it is not the desktop configuration interface. The optional browser interface remains available for Pi/headless administration over an SSH tunnel, as described below.
+
+## Screenshots
+
+These screenshots show the native desktop interface in v0.2.0. Playback and account details are examples. Click any image to view it at full size.
+
+| First-time setup | Plex connections |
+| --- | --- |
+| [![Overview with the first-time setup checklist](docs/screenshots/overview-setup.png)](docs/screenshots/overview-setup.png) | [![Plex account and server selection](docs/screenshots/connections.png)](docs/screenshots/connections.png) |
+
+| Sharing preferences | Built-in setup guide |
+| --- | --- |
+| [![Native switches for artwork, playback progress, and sharing](docs/screenshots/preferences.png)](docs/screenshots/preferences.png) | [![The built-in twelve-part setup guide](docs/screenshots/guide.png)](docs/screenshots/guide.png) |
+
+<details>
+<summary>See Discord connection modes and Plex Home profiles</summary>
+
+| Discord desktop | Always-on / no Discord client |
+| --- | --- |
+| [![Connect through the Discord desktop app](docs/screenshots/discord-desktop.png)](docs/screenshots/discord-desktop.png) | [![Always-on Discord account authorization settings](docs/screenshots/discord-always-on.png)](docs/screenshots/discord-always-on.png) |
+
+**Plex Home profiles**
+
+Choose the profile used on your player, including a managed profile with a PIN.
+
+[![Native Plex Home profile selection dialog](docs/screenshots/plex-home.png)](docs/screenshots/plex-home.png)
+
+</details>
+
+[Download all 12 screenshots](https://github.com/sixtenths/plex-presence/releases/download/v0.2.0/PlexPresence-v0.2.0-screenshots.zip), including advanced connection dialogs and a compact window.
 
 ## First-time setup
 
