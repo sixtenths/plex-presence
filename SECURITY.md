@@ -10,6 +10,6 @@ Discord uses OAuth with PKCE, a public client, and the Social SDK presence scope
 
 Plex tokens are sent only to Plex account services and the chosen Plex server. Automatic server selection checks the server identity. An explicitly entered HTTP server URL sends its token without TLS on that network; use HTTPS or a trusted local network. Shared-server access may not include permission to read active playback sessions.
 
-Optional artwork sends a public poster URL to images.weserv.nl (`wsrv.nl`) and Discord. It does not upload private Plex files or include Plex credentials in image URLs. Disable artwork in the GUI to avoid that image proxy. There is no telemetry or central Plex Presence backend.
+Default artwork sends a public poster URL to images.weserv.nl (`wsrv.nl`) and Discord. It does not upload Plex files. The optional **Use my selected Plex posters** setting instead downloads the server's selected poster and uploads that image to Litterbox for one hour. Anyone with its URL can view it; Discord and the image proxy may cache it beyond the host's expiry. Plex tokens and server addresses are never sent to either image service. Turn this setting off to avoid uploading selected artwork, or disable artwork entirely to avoid the image proxy. There is no telemetry or central Plex Presence backend.
 
 The no-client Discord publishing endpoint is undocumented and may change or stop working. This project is experimental and cannot guarantee ongoing access or service availability.

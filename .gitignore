@@ -11,6 +11,9 @@ upstream/
 /discord_presence.py
 /pause_guard.py
 /end_guard.py
+/anime.py
+/selected_artwork.py
+/artwork_network.py
 /plex.py
 /setup.html
 /setup.js

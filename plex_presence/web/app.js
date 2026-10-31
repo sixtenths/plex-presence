@@ -15,6 +15,7 @@ async function perform(button, task) {
   finally { if (button) button.disabled = false; }
 }
 function fillSettings(s) {
+  $('use-plex-artwork').checked = s.use_plex_artwork === true;
   $('username').value = s.plex_username || '';
   $('manual-user').value = s.plex_username || '';
   $('client-id').value = s.discord_client_id || '';
@@ -78,7 +79,7 @@ $('manual-form').onsubmit = e => { e.preventDefault(); perform(e.submitter, asyn
 $('discord-form').onsubmit = e => { e.preventDefault(); perform(e.submitter, async () => { location.assign((await post('/api/discord/connect', {client_id:$('client-id').value})).url); }); };
 $('copy-redirect').onclick = e => perform(e.currentTarget, async () => { await navigator.clipboard.writeText($('redirect').textContent); message('Redirect URL copied. Paste it into your Discord application’s OAuth2 settings.'); });
 $('refresh-users').onclick = e => perform(e.currentTarget, async () => { const result = await post('/api/plex/users'); $('users').replaceChildren(...result.users.map(name => new Option(name,name))); message('Current Plex users loaded. Choose one or enter a username.'); });
-$('settings-form').onsubmit = e => { e.preventDefault(); perform(e.submitter, async () => { await post('/api/settings',{plex_username:$('username').value,enabled:$('enabled').checked,artwork_enabled:$('artwork-enabled').checked,show_progress:$('show-progress').checked}); message('Preferences saved.'); }); };
+$('settings-form').onsubmit = e => { e.preventDefault(); perform(e.submitter, async () => { await post('/api/settings',{plex_username:$('username').value,enabled:$('enabled').checked,artwork_enabled:$('artwork-enabled').checked,use_plex_artwork:$('use-plex-artwork').checked,show_progress:$('show-progress').checked}); message('Preferences saved.'); }); };
 for (const provider of ['plex','discord']) $(`${provider}-disconnect`).onclick = e => perform(e.currentTarget, async () => { await post(`/api/${provider}/disconnect`); message(`${provider === 'plex' ? 'Plex' : 'Discord'} disconnected from this installation.`); });
 $('quit').onclick = e => perform(e.currentTarget, async () => { await post('/api/quit'); quitting = true; message('Plex Presence has stopped. You can close this tab.'); });
 $('poster').onerror = () => { $('poster').hidden = true; $('poster-placeholder').hidden = false; };

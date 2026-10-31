@@ -5,6 +5,7 @@ import threading
 import time
 from pathlib import Path
 from .artwork import ArtworkResolver
+from .selected_artwork import SelectedArtworkResolver
 from .discord_presence import DiscordPresence
 from .oauth import DiscordAuth
 from .plex import PlexWatcher, PlexError
@@ -22,6 +23,7 @@ class Service:
         self.config = read_json(self.config_path)
         for key in ("enabled", "artwork_enabled", "show_progress"):
             self.config.setdefault(key, True)
+        self.config.setdefault("use_plex_artwork", False)
         self.config.setdefault("plex_client_identifier", secrets.token_hex(16))
         save_private(self.config_path, self.config)
         self.port = port
@@ -44,7 +46,7 @@ class Service:
         self.watcher = self.artwork = None
         if all(self.config.get(k) for k in ("plex_url", "plex_token", "plex_username")):
             self.watcher = PlexWatcher(dict(self.config, plex_timeout=4, poll_interval=5))
-            self.artwork = ArtworkResolver(self.config)
+            self.artwork = (SelectedArtworkResolver if self.config.get("use_plex_artwork") else ArtworkResolver)(self.config)
         if self.config.get("discord_client_id") and self.token_path.exists():
             self.publisher = DiscordPresence(self.config, self.token_path)
         self.wake.set()
@@ -55,7 +57,7 @@ class Service:
                 plex_connected=bool(self.config.get("plex_account_token") or self.config.get("plex_token")),
                 discord_connected=self.token_path.exists(), plex_signin_pending=bool(self.account.pending),
                 settings={k: self.config.get(k, "") for k in ("server_name", "plex_url", "plex_username", "discord_client_id",
-                                                              "enabled", "artwork_enabled", "show_progress")},
+                                                              "enabled", "artwork_enabled", "show_progress", "use_plex_artwork")},
                 auth_error=self.auth_error, experimental=True)
 
     def save(self):
@@ -117,13 +119,13 @@ class Service:
                 username = str(data.get("plex_username", self.config.get("plex_username", ""))).strip()
                 if not username or len(username) > 128:
                     raise ValueError("Enter the Plex username to track.")
-                for key in ("enabled", "artwork_enabled", "show_progress"):
+                for key in ("enabled", "artwork_enabled", "show_progress", "use_plex_artwork"):
                     if key in data and not isinstance(data[key], bool):
                         raise ValueError("Invalid setting value.")
                 self.clear_presence()
                 self.config["plex_username"] = username
                 self.config.pop("plex_user_id", None)
-                for key in ("enabled", "artwork_enabled", "show_progress"):
+                for key in ("enabled", "artwork_enabled", "show_progress", "use_plex_artwork"):
                     if key in data:
                         self.config[key] = data[key]
                 self.save()

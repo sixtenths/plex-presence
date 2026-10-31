@@ -12,6 +12,7 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import urlsplit, urlunsplit
 from urllib.request import Request, build_opener
 from .network import NoRedirect
+from .anime import AnimeEpisodes
 import xml.etree.ElementTree as ET
 
 
@@ -93,6 +94,7 @@ class PlexWatcher:
         if not all(math.isfinite(n) and n > 0 for n in (self.poll_interval, self._timeout)):
             raise ValueError("Plex poll interval and timeout must be positive numbers")
         self._selected_session = None
+        self._anime = AnimeEpisodes(config)
         self._status = "idle"
 
     @property
@@ -243,4 +245,13 @@ class PlexWatcher:
         )
         self._selected_session = self._session_id(item)
         self._status = state
-        return self._activity(item, state)
+        activity = self._activity(item, state)
+        if item.get("type") == "episode":
+            label = self._anime.label(item.get("grandparentRatingKey"), item.get("parentIndex"), item.get("index"))
+            if label:
+                title = _label(item.get("title"))
+                text = label + (" · " + title if title else "")
+                if state != "playing":
+                    text += " · " + state.capitalize()
+                activity["state"] = text[:128]
+        return activity
