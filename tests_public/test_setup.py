@@ -9,6 +9,7 @@ from unittest.mock import Mock, patch
 from urllib.error import HTTPError
 from urllib.parse import parse_qs, urlsplit
 from urllib.request import Request, urlopen
+from plex_presence.__main__ import reopen_running
 from plex_presence.oauth import DiscordAuth
 from plex_presence.plex_account import PlexAccount
 from plex_presence.network import NoRedirect, server_url
@@ -110,6 +111,17 @@ class ServiceTests(unittest.TestCase):
         for secret in ("PRIVATE_PLEX", "PRIVATE_ACCOUNT", "PRIVATE_DISCORD"):
             self.assertNotIn(secret, text)
 
+    def test_window_show_requires_native_window_and_sets_event(self):
+        self.assertFalse(self.service.status()["desktop_window"])
+        self.assertFalse(self.service.status()["window_visible"])
+        with self.assertRaises(ValueError):
+            self.service.action("/api/window/show", {})
+        self.assertFalse(self.service.show_window.is_set())
+        self.service.desktop_window = True
+        self.assertEqual(self.service.action("/api/window/show", {}), {"ok":True})
+        self.assertTrue(self.service.show_window.is_set())
+        self.assertFalse(self.service.stop.is_set())
+
     def test_discovery_only_returns_public_labels(self):
         self.service.config["plex_account_token"] = "PRIVATE_ACCOUNT"
         with patch.object(self.service.account, "resources", return_value=[{"clientIdentifier":"server1","name":"Cinema","owned":True,"accessToken":"PRIVATE_SERVER","connections":[{"uri":"http://192.0.2.2"}]}]):
@@ -182,6 +194,53 @@ class HttpTests(unittest.TestCase):
             with urlopen(self.service.origin + path) as response:
                 self.assertEqual(response.status, 200)
                 self.assertEqual(response.headers["Cache-Control"], "no-store")
+
+    def test_native_auth_return_shows_completion_not_browser_settings(self):
+        self.service.desktop_window = True
+        for path in ("/?plex=1", "/?discord=1"):
+            with self.subTest(path=path):
+                self.service.show_window.clear()
+                with urlopen(self.service.origin + path) as response:
+                    body = response.read()
+                    self.assertIn(b"Return to Plex Presence", body)
+                    self.assertNotIn(b"Choose your Plex", body)
+                    self.assertEqual(response.headers["Referrer-Policy"], "no-referrer")
+                self.assertTrue(self.service.show_window.is_set())
+        self.service.show_window.clear()
+        with urlopen(self.service.origin + "/") as response:
+            self.assertIn(b"Return to Plex Presence", response.read())
+        self.assertFalse(self.service.show_window.is_set())
+
+    def test_discord_callback_routes_to_native_or_headless_completion(self):
+        for native in (True, False):
+            with self.subTest(native=native), patch.object(self.service, "finish_oauth") as finish:
+                self.service.desktop_window = native
+                self.service.show_window.clear()
+                with urlopen(self.service.origin + "/callback?state=test-state&code=test-code") as response:
+                    body = response.read()
+                    self.assertEqual(response.url, self.service.origin + "/?discord=1")
+                finish.assert_called_once_with({"state":["test-state"], "code":["test-code"]})
+                self.assertIn(b"Return to Plex Presence" if native else b"Choose your Plex", body)
+                self.assertEqual(self.service.show_window.is_set(), native)
+
+    def test_window_show_endpoint_preserves_csrf_guard(self):
+        self.service.desktop_window = True
+        headers = {"Content-Type":"application/json", "Origin":self.service.origin, "X-CSRF-Token":"wrong"}
+        with self.assertRaises(HTTPError) as caught:
+            urlopen(Request(self.service.origin + "/api/window/show", data=b"{}", headers=headers))
+        self.assertEqual(caught.exception.code, 403)
+        self.assertFalse(self.service.show_window.is_set())
+        headers["X-CSRF-Token"] = self.service.csrf
+        with urlopen(Request(self.service.origin + "/api/window/show", data=b"{}", headers=headers)) as response:
+            self.assertTrue(json.load(response)["ok"])
+        self.assertTrue(self.service.show_window.is_set())
+
+    def test_shortcut_reopens_while_presence_service_is_busy(self):
+        self.service.desktop_window = True
+        with self.service.lock:
+            self.assertTrue(reopen_running(self.service.port))
+        self.assertTrue(self.service.show_window.is_set())
+        self.assertFalse(self.service.stop.is_set())
 
     def test_host_origin_and_csrf_guards(self):
         for headers in ({"Host":"evil.example"}, {"Origin":"https://evil.example"}, {"X-CSRF-Token":"wrong"}):

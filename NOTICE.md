@@ -5,3 +5,7 @@ Plex Presence is inspired by [phin05/discord-rich-presence-plex](https://github.
 Plex Presence is distributed under GNU AGPL version 3; see LICENSE. It is an independent community project and is not affiliated with or endorsed by Plex or Discord. Plex, Discord, and media artwork belong to their respective owners.
 
 Native downloads bundle Python and PyInstaller runtime components, which retain their own licenses. PyInstaller's bootloader exception permits distribution of bundled applications. Python license files supplied by the packager remain in the application bundle.
+
+The native desktop interface uses Qt and Qt for Python (PySide6-Essentials and Shiboken6), version 6.7.3, under the GNU LGPL version 3. License copies are included in THIRD_PARTY_LICENSES. The corresponding source is available from [Qt Base v6.7.3](https://github.com/qt/qtbase/tree/v6.7.3) and [Qt for Python v6.7.3](https://github.com/pyside/pyside-setup/tree/v6.7.3). Bundled Qt libraries remain separate shared-library files and may be replaced with compatible modified versions. Reverse engineering for debugging modifications to LGPL-covered components is permitted by their license.
+
+The Plex Presence app icon is an original pair of overlapping message panels. It does not use the Plex logo.

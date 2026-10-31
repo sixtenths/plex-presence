@@ -38,6 +38,10 @@ def handler_for(service):
             if not self.allowed():
                 return self.reply(403, {"error": "Use the 127.0.0.1 address shown by the application."})
             url = urlsplit(self.path)
+            if url.path == "/" and service.desktop_window:
+                if "plex" in parse_qs(url.query) or "discord" in parse_qs(url.query):
+                    service.show_window.set()
+                return self.reply(200, b'<!doctype html><meta charset="utf-8"><title>Plex Presence</title><h1>Return to Plex Presence</h1><p>You can close this tab. Continue setup in the Plex Presence desktop window.</p>', "text/html")
             static = {"/": ("index.html", "text/html"), "/app.js": ("app.js", "application/javascript"), "/style.css": ("style.css", "text/css")}
             static.update({"/guide.html": ("guide.html", "text/html"), "/guide.js": ("guide.js", "application/javascript"), "/guide.css": ("guide.css", "text/css")})
             if url.path in static:
@@ -45,6 +49,9 @@ def handler_for(service):
                 return self.reply(200, (WEB / file).read_bytes(), kind)
             if url.path == "/api/status":
                 return self.reply(200, service.status())
+            if url.path == "/api/window/status":
+                return self.reply(200, {"app_id":"plex-presence", "desktop_window":service.desktop_window,
+                    "window_visible":service.window_visible, "csrf":service.csrf})
             if url.path == "/callback":
                 service.finish_oauth(parse_qs(url.query))
                 self.send_response(303)

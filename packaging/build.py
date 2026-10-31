@@ -5,6 +5,7 @@ import tomllib
 from pathlib import Path
 import platform
 import shutil
+import ssl
 import subprocess
 import sys
 
@@ -14,8 +15,16 @@ arch = {"AMD64": "x64", "x86_64": "x64", "aarch64": "arm64", "arm64": "arm64"}.g
 command = [sys.executable, "-m", "PyInstaller", "--noconfirm", "--clean", "--onedir", "--name", "PlexPresence",
            "--add-data", f"{root / 'plex_presence/web'}:plex_presence/web", "--add-data", f"{root / 'LICENSE'}:.",
            "--add-data", f"{root / 'NOTICE.md'}:.", "--distpath", "dist", "--workpath", "build/pyinstaller", "--specpath", "build"]
+command.extend(["--add-data", f"{root / 'plex_presence/assets'}:plex_presence/assets"])
+command.extend(["--add-data", f"{root / 'THIRD_PARTY_LICENSES'}:THIRD_PARTY_LICENSES"])
+# Some Python distributions load extra certificate policy data beside ssl.py.
+# Keep that runtime file beside the frozen module so TLS context creation works.
+runtime_certificate_policy = Path(ssl.__file__).with_name("codex-rejected-cas.pem")
+if runtime_certificate_policy.is_file():
+    command.extend(["--add-data", f"{runtime_certificate_policy}:."])
 if os_name in ("windows", "macos"):
     command.append("--windowed")
+    command.extend(["--icon", str(root / "plex_presence/assets" / ("app.ico" if os_name == "windows" else "app.icns"))])
 if os_name == "macos":
     command.extend(["--osx-bundle-identifier", "io.github.sixtenths.plexpresence"])
 command.append(str(root / "run.py"))

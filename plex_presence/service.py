@@ -36,6 +36,9 @@ class Service:
         self.lock = threading.RLock()
         self.stop = threading.Event()
         self.wake = threading.Event()
+        self.show_window = threading.Event()
+        self.desktop_window = False
+        self.window_visible = False
         self.generation = 0
         self.account = PlexAccount(self.config["plex_client_identifier"])
         self.oauth = DiscordAuth(self.origin + "/callback")
@@ -65,6 +68,7 @@ class Service:
     def status(self):
         with self.lock:
             return dict(copy.deepcopy(self.snapshot), app_id="plex-presence", csrf=self.csrf, redirect_uri=self.oauth.redirect_uri,
+                desktop_window=self.desktop_window, window_visible=self.window_visible,
                 plex_connected=bool(self.config.get("plex_account_token") or self.config.get("plex_token")),
                 discord_connected=(self.publisher.status.get("state") in ("idle", "active") if isinstance(self.publisher, DesktopPresence) else self.token_path.exists()), plex_signin_pending=bool(self.account.pending),
                 settings={k: self.config.get(k, "") for k in ("server_name", "plex_url", "plex_username", "discord_client_id",
@@ -82,6 +86,11 @@ class Service:
         self.snapshot["activity"] = None
 
     def action(self, path, data):
+        if path == "/api/window/show":
+            if not self.desktop_window:
+                raise ValueError("This instance is running headlessly. Quit it before opening the desktop app.")
+            self.show_window.set()
+            return {"ok": True}
         with self.lock:
             if path == "/api/discord/mode":
                 mode = data.get("mode")

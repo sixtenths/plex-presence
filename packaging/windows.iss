@@ -1,5 +1,5 @@
 #ifndef AppVersion
-  #define AppVersion "0.1.6"
+  #define AppVersion "0.2.0"
 #endif
 [Setup]
 AppId={{904AB196-A338-49D3-98D4-E038923F42A0}
@@ -18,6 +18,7 @@ OutputBaseFilename=PlexPresence-Setup-windows-x64
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
+SetupIconFile=..\plex_presence\assets\app.ico
 UninstallDisplayIcon={app}\PlexPresence.exe
 CloseApplications=yes
 RestartApplications=no
@@ -33,7 +34,7 @@ Source: "..\dist\PlexPresence\*"; DestDir: "{app}"; Flags: ignoreversion recurse
 [Icons]
 Name: "{group}\Plex Presence"; Filename: "{app}\PlexPresence.exe"
 Name: "{autodesktop}\Plex Presence"; Filename: "{app}\PlexPresence.exe"; Tasks: desktopicon
-Name: "{userstartup}\Plex Presence"; Filename: "{app}\PlexPresence.exe"; Parameters: "--no-browser"; Tasks: startup
+Name: "{userstartup}\Plex Presence"; Filename: "{app}\PlexPresence.exe"; Parameters: "--background"; Tasks: startup
 
 [Run]
-Filename: "{app}\PlexPresence.exe"; Description: "Open Plex Presence and its setup guide"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\PlexPresence.exe"; Description: "Launch Plex Presence"; Flags: nowait postinstall skipifsilent

@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 import platform
 import socket
+import ssl
 import subprocess
 import tempfile
 import time
@@ -15,6 +16,17 @@ if platform.system() == "Darwin":
 else:
     binary = root / "dist/PlexPresence/PlexPresence.exe" if platform.system() == "Windows" else root / "dist/PlexPresence/PlexPresence"
 binary = Path(os.environ.get("PLEX_BUNDLE_BINARY", binary))
+runtime_certificate_policy = Path(ssl.__file__).with_name("codex-rejected-cas.pem")
+if runtime_certificate_policy.is_file():
+    candidates = (
+        binary.parent / "_internal" / runtime_certificate_policy.name,
+        binary.parent.parent / "Resources" / runtime_certificate_policy.name,
+        binary.parent.parent / "Frameworks" / runtime_certificate_policy.name,
+    )
+    expected = runtime_certificate_policy.read_bytes()
+    assert any(path.is_file() and path.read_bytes() == expected for path in candidates), (
+        "The frozen app is missing the build runtime's certificate policy file; TLS initialization would fail."
+    )
 with socket.socket() as probe:
     probe.bind(("127.0.0.1", 0))
     port = probe.getsockname()[1]

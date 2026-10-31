@@ -26,6 +26,8 @@ with tempfile.TemporaryDirectory(prefix="plex-installer-test-") as directory:
                 assert winreg.QueryValueEx(installed, "DisplayName")[0] .startswith("Plex Presence")
         subprocess.run([sys.executable, str(root / "tests_public/smoke_bundle.py")],
             env=dict(os.environ, PLEX_BUNDLE_BINARY=str(target / "PlexPresence.exe")), check=True, timeout=90)
+        subprocess.run([sys.executable, str(root / "tests_public/smoke_native.py")],
+            env=dict(os.environ, PLEX_BUNDLE_BINARY=str(target / "PlexPresence.exe")), check=True, timeout=90)
     finally:
         uninstaller = target / "unins000.exe"
         if uninstaller.exists():

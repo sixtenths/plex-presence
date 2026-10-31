@@ -1,16 +1,20 @@
 # Plex Presence
 
-Show your Plex playback on your own Discord profile, with a guided local setup GUI and **your choice of Discord desktop or always-on mode**. Runs on Windows, macOS, Linux, and a 64-bit Raspberry Pi.
+Show your Plex playback on your own Discord profile, in a **native desktop application**, with a built-in setup guide and **your choice of Discord desktop or always-on mode**. Runs on Windows, macOS, Linux, and a 64-bit Raspberry Pi.
 
 [Download a release](https://github.com/sixtenths/plex-presence/releases) · [Build status](https://github.com/sixtenths/plex-presence/actions) · [Security and privacy](SECURITY.md)
 
-![Local setup GUI](docs/setup.png)
+![Native Plex Presence playback view](docs/screenshots/playback.png)
+
+The native window above is rendered with example playback data. See [first-time setup](docs/screenshots/overview-setup.png), [connections](docs/screenshots/connections.png), [preferences](docs/screenshots/preferences.png), and the [built-in guide](docs/screenshots/guide.png).
 
 **Experimental:** Discord's OAuth permission is documented, but the headless presence publishing endpoint is not a stable public API. Discord may change or disable it. Always-on mode requires your own Discord application and Social SDK; desktop mode does not. This independent community project is inspired by [phin05/discord-rich-presence-plex](https://github.com/phin05/discord-rich-presence-plex).
 
 ## Features
 
-- Sign in to Plex and choose your own server, or enter an address and token in Advanced setup.
+- Configure accounts and preferences in a dedicated desktop window with native controls. A browser is used for account sign-in and external links, not as the desktop settings interface.
+- Keep watching in the background when the window is closed; reopen it from the shortcut or Windows tray icon.
+- Sign in to Plex and choose your own server, or enter an address and token using **Direct connection…**.
 - Select the Plex username to track and authorize your own Discord account.
 - Show movies, episodes, and music, with optional public artwork and playback progress.
 - Shows tagged **Anime** in Plex genres or labels use **Episode 42** instead of **S03E01**. Numbering follows Plex's regular-season order, excludes season-zero specials, and uses an explicit absolute index when available. It also detects shows whose episode indices already continue across seasons, avoiding double counting. Otherwise it adds the highest episode index in each earlier season; incomplete libraries or alternative ordering can differ from an external anime database. Unavailable metadata or missing whole earlier seasons retains the standard season/episode label.
@@ -24,7 +28,7 @@ Playback is polled roughly every five seconds. Network latency, Plex session rep
 
 **Windows: download [PlexPresence-Setup-windows-x64.exe](https://github.com/sixtenths/plex-presence/releases/latest/download/PlexPresence-Setup-windows-x64.exe), run the installer, then open Plex Presence from its Start menu or desktop shortcut.** It installs for your Windows user, includes Python and dependencies, and registers an uninstaller. Quit the app before upgrading. Uninstall removes the program; saved account settings remain in the separate data directory below.
 
-A **12-part setup guide opens on first launch**. Use **Help / Setup guide** to reopen it. It explains installation, Plex Home, shared servers, both Discord modes, artwork, troubleshooting, everyday use, privacy, and Raspberry Pi setup.
+The app opens on **Overview**, with a compact setup checklist and a **Start setup** button for a new installation. **Walk me through it** opens the detailed guide. **Connections** contains your accounts and servers, and **Preferences** controls what you share. Choose **Setup guide** in the left sidebar for the detailed **12-part walkthrough** covering installation, Plex Home, shared servers, both Discord modes, artwork, troubleshooting, everyday use, privacy, and Raspberry Pi setup.
 
 On macOS/Linux, choose the archive for your machine and extract the **whole folder** before launching. All native downloads include Python and dependencies.
 
@@ -40,21 +44,25 @@ Builds are unsigned and macOS builds are not notarized. Windows SmartScreen or m
 
 Native builds are tested on the current Windows GitHub runner, macOS 15 (both architectures), and Ubuntu 22.04 (both architectures). Older operating systems are not guaranteed. Linux binaries require glibc 2.35 or newer; Alpine/musl is unsupported. For older compatible Linux systems, use Python 3.11+ from source. No 32-bit Pi or Windows ARM native build is supplied.
 
-The app opens `http://127.0.0.1:8765` in your default browser. Closing the browser leaves the watcher running. Use **Quit app** in the GUI to stop it and clear presence. Launch it again to resume with saved settings. The Windows installer enables **Start when I sign in** by default; you can uncheck it during installation or disable Plex Presence in Windows Startup apps. Startup runs quietly without opening a browser. Right-click the tray icon for **Open settings / setup guide** or **Quit Plex Presence**. Launching the Start menu shortcut again opens the already-running app. macOS/Linux users can configure login startup using their OS or service manager.
+Launching Plex Presence opens its own desktop window. Closing that window hides it while the watcher continues running. Reopen it with the application shortcut or the Windows tray menu. Use **Quit application** in the window or **Quit Plex Presence** in the Windows tray menu to stop the process and clear presence.
+
+The Windows installer enables **Start when I sign in** by default; you can uncheck it during installation or disable Plex Presence in Windows Startup apps. Startup uses `--background`, which keeps the desktop window hidden until you open it. Right-click the tray icon for **Open settings / setup guide** or **Quit Plex Presence**. Launching the Start menu shortcut again brings the existing application window back. macOS/Linux users can configure login startup using their OS or service manager.
+
+Plex sign-in and Always-on Discord authorization still use the provider's website in your usual browser. After approving, return to the Plex Presence window. The local callback address is used for authorization; it is not the desktop configuration interface. The optional browser interface remains available for Pi/headless administration over an SSH tunnel, as described below.
 
 ## First-time setup
 
 ### 1. Plex
 
-Click **Connect Plex**, sign in on Plex's website, and approve the connection. Return to the GUI, refresh the server list if needed, choose a server, and click **Use server**. Servers you own use session polling. Shared servers use a playback notification connection authenticated with your personal shared-server token, without requesting the owner-only session list.
+Choose **Connections** in the left sidebar, then click **Connect Plex**, sign in on Plex's website, and approve the connection. Return to the Plex Presence window, refresh the server list if needed, choose a server, and click **Use this server**. Servers you own use session polling. Shared servers use a playback notification connection authenticated with your personal shared-server token, without requesting the owner-only session list.
 
 Enter the Plex username to track. **Find active users** suggests names from current playback; start a stream if a name is missing, or type the exact username yourself. In shared-server mode the tracked user is locked to the signed-in profile. After connecting or restarting the app, start or resume playback so Plex sends a fresh event. You still need library access and a reachable server; an offline server or denied notification connection cannot be bypassed.
 
-Advanced setup accepts your server URL, token, and username. Prefer HTTPS. Local HTTP sends the token unencrypted on your network. Never put a token in the URL or a public issue.
+**Connections → Direct connection…** accepts your server URL, token, and username. Prefer HTTPS. Local HTTP sends the token unencrypted on your network. Never put a token in the URL or a public issue.
 
 ### Plex Home / managed profiles
 
-If you watch as a Plex Home profile, expand **Plex Home: choose a profile**, click **Load Home profiles**, select the profile, and enter its four-digit PIN if protected. Click **Use this profile**, then select one of that profile's accessible servers. This obtains that profile's own access token; the PIN is not saved. You do not need the server owner's token.
+If you watch as a Plex Home profile, open **Connections → Plex Home profiles**, click **Load Home profiles**, select the profile, and enter its four-digit PIN if protected. Click **Use this profile**, then select one of that profile's accessible servers. This obtains that profile's own access token; the PIN is not saved. You do not need the server owner's token.
 
 A managed profile cannot sign in independently: an existing full member of its Plex Home first signs in normally, then switches to the profile. The original login token is retained locally to allow later profile switching. Switching profiles clears the previous server selection. Regular shared users simply sign in with their own Plex account and choose a server marked **(shared)**; no Home switch is needed.
 
@@ -79,11 +87,11 @@ Every install has separate credentials. Nothing connects to the project owner's 
 
 ### 3. Playback
 
-Save your preferences and start Plex playback. The GUI shows the Plex state and whether Discord accepted an update. Pause or stop to clear it. Public posters are fitted inside a square canvas to preserve proportions; Discord controls its card layout.
+Open **Preferences**, save your choices, and start Plex playback. The desktop window shows the Plex state and whether Discord accepted an update. Pause or stop to clear it. Public posters are fitted inside a square canvas to preserve proportions; Discord controls its card layout.
 
 ## Run from source
 
-Requires Python 3.11+ and Git. Runtime code uses the Python standard library plus `websocket-client` and `pypresence` (and Windows tray dependencies), installed automatically by `pip install .`.
+Requires Python 3.11+ and Git. The desktop interface uses native Qt widgets through `PySide6-Essentials`; it does not embed a browser or WebView. `pip install .` installs the Qt bindings and runtime dependencies alongside `websocket-client`, `pypresence`, and the Windows tray dependencies. Native downloads bundle these dependencies. Linux desktop use also needs a graphical session and the system libraries required by Qt; `--no-browser` runs without creating a desktop window.
 
 ```sh
 git clone https://github.com/sixtenths/plex-presence.git
@@ -109,7 +117,7 @@ After installing dependencies, you can also run `python run.py` from the checkou
 
 ## Pi / headless setup
 
-Start the native executable, or the Python entry point, with `--no-browser`:
+Use `--no-browser` for a remote machine without a desktop session. This keeps the watcher and local administration endpoint running without creating the native window. Start the bundled executable, or the Python entry point:
 
 ```sh
 python3 -m plex_presence --no-browser
@@ -121,7 +129,7 @@ From your desktop, forward the setup port over SSH using your own username and m
 ssh -N -L 8765:127.0.0.1:8765 user@your-server
 ```
 
-Open `http://127.0.0.1:8765` in your desktop browser. Keep the tunnel connected until Discord redirects back. The watcher must keep running on the remote machine after setup. For persistent startup, run the same command under your preferred service manager as your regular user.
+For this headless administration path, open `http://127.0.0.1:8765` in your desktop browser. Keep the tunnel connected until Discord redirects back. The watcher must keep running on the remote machine after setup. For persistent startup, run the same command under your preferred service manager as your regular user.
 
 Do not expose the setup port to the internet. If 8765 is busy, use `--port 8790`, forward 8790 at both ends, and save the new redirect URL in your Discord application. `--data-dir PATH` selects another configuration directory. Only one instance can use a given directory.
 
@@ -133,7 +141,7 @@ Do not expose the setup port to the internet. If 8765 is busy, use `--port 8790`
 | macOS | `~/Library/Application Support/PlexPresence` |
 | Linux | `$XDG_CONFIG_HOME/plex-presence`, or `~/.config/plex-presence` |
 
-Credentials are local plaintext files protected by user/file permissions, not a keychain. Never share them. There is no telemetry or central project backend. Optional artwork sends public poster URLs through [images.weserv.nl](https://images.weserv.nl/); default mode does not upload Plex artwork. Enable **Use my selected Plex posters** to use the exact poster selected on your server: it uploads that image to Litterbox (or TempFile.org if Litterbox is unavailable) for one hour, then fits it through the image proxy. Anyone with the image URL can view it, and Discord/proxy caches may last longer. No Plex credentials or server addresses are shared. Disable artwork to avoid the proxy. If no safe public poster exists, presence works without an image.
+Credentials are local plaintext files protected by user/file permissions, not a keychain. Never share them. There is no telemetry or central project backend. Optional artwork sends public poster URLs through [images.weserv.nl](https://images.weserv.nl/); default mode does not upload Plex artwork. Enable **Use your Plex artwork** to use the exact poster selected on your server: it uploads that image to Litterbox (or TempFile.org if Litterbox is unavailable) for one hour, then fits it through the image proxy. Anyone with the image URL can view it, and Discord/proxy caches may last longer. No Plex credentials or server addresses are shared. Disable artwork to avoid the proxy. If no safe public poster exists, presence works without an image.
 
 ## Troubleshooting
 
@@ -144,7 +152,8 @@ Credentials are local plaintext files protected by user/file permissions, not a 
 | Server cannot connect | Reachability, TLS certificate, the selected profile’s library access and notification/session permissions. |
 | No playback | Server on, correct server and exact Plex username, playback active. |
 | Paused activity briefly lingers | Allow a poll and Discord refresh; check GUI retry status. |
-| Cannot start | Port or data directory already in use, or file permissions. |
+| Cannot start | Port or data directory already in use, file permissions, or missing graphical desktop/Qt system libraries. Use `--no-browser` for headless systems. |
+| Window disappeared after closing it | The watcher stays running. Launch the shortcut or use the Windows tray menu to reopen settings. |
 | Missing image | Artwork enabled and a supported public poster exists. |
 | Discord asks to reconnect | Disconnect and authorize again; verify Social SDK is enabled. |
 
@@ -157,7 +166,7 @@ python packaging/build.py
 python tests_public/smoke_bundle.py
 ```
 
-Build on the target OS and architecture. Windows requires Inno Setup 6 (ISCC.exe on PATH or its default installation directory). GitHub Actions runs tests, packages each app, then launches each native bundle to test its GUI API and shutdown. Version tags publish release downloads and SHA-256 checksums only after every native job passes. Tests use mocked account responses and never require live credentials.
+Build on the target OS and architecture. Windows requires Inno Setup 6 (ISCC.exe on PATH or its default installation directory). GitHub Actions runs tests, packages each app, then launches each native bundle to test its local service API and shutdown. Version tags publish release downloads and SHA-256 checksums only after every native job passes. Tests use mocked account responses and never require live credentials.
 
 ## License
 

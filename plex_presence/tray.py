@@ -1,7 +1,7 @@
-"""Windows notification-area controls; GUI remains in the default browser."""
+"""Windows notification-area controls for the native configuration window."""
 import sys
 import threading
-import webbrowser
+from pathlib import Path
 
 
 def start_tray(service):
@@ -9,13 +9,11 @@ def start_tray(service):
         return None
     try:
         import pystray
-        from PIL import Image, ImageDraw
-        image = Image.new("RGBA", (64, 64), (23, 25, 33, 255))
-        draw = ImageDraw.Draw(image)
-        draw.polygon([(21, 12), (35, 12), (48, 32), (35, 52), (21, 52), (34, 32)], fill="#e5a00d")
+        from PIL import Image
+        image = Image.open(Path(__file__).parent / "assets/app.png").convert("RGBA")
 
         def configure(*_):
-            webbrowser.open(service.origin)
+            service.show_window.set()
 
         def quit_app(*_):
             service.stop.set()
@@ -27,5 +25,5 @@ def start_tray(service):
         threading.Thread(target=icon.run, name="system-tray", daemon=True).start()
         return icon
     except Exception:
-        # The local GUI and Start menu shortcut still provide configuration/quit.
+        # The Start menu shortcut still reopens the native window.
         return None

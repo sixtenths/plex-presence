@@ -4,13 +4,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "plex-presence"
-version = "0.1.6"
-description = "A local setup GUI for sharing personal Plex playback on Discord without a desktop client"
+version = "0.2.0"
+description = "A native desktop app for sharing Plex playback on Discord, with optional headless operation"
 readme = "README.md"
 requires-python = ">=3.11"
 license = "AGPL-3.0-only"
 authors = [{name = "sixtenths"}]
-dependencies = ["websocket-client>=1.8,<2", "pypresence>=4.6.2,<5", "pystray>=0.19.5,<1; sys_platform == 'win32'", "Pillow>=10,<13; sys_platform == 'win32'"]
+dependencies = ["websocket-client>=1.8,<2", "pypresence>=4.6.2,<5", "PySide6-Essentials==6.7.3", "pystray>=0.19.5,<1; sys_platform == 'win32'", "Pillow>=10,<13; sys_platform == 'win32'"]
 classifiers = ["Development Status :: 3 - Alpha", "Operating System :: Microsoft :: Windows", "Operating System :: MacOS", "Operating System :: POSIX :: Linux", "Programming Language :: Python :: 3"]
 
 [project.urls]
@@ -25,4 +25,4 @@ packages = ["plex_presence"]
 include-package-data = false
 
 [tool.setuptools.package-data]
-plex_presence = ["web/*.html", "web/*.css", "web/*.js"]
+plex_presence = ["web/*.html", "web/*.css", "web/*.js", "assets/*"]
