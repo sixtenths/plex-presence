@@ -22,9 +22,23 @@ jobs:
           python-version: '3.12'
       - run: python -m pip install . pyinstaller==6.22.3
       - run: python -m unittest discover -s tests_public -v
+      - name: Install Windows installer compiler
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $download = Join-Path $env:RUNNER_TEMP 'innosetup.exe'
+          $compiler = Join-Path $env:RUNNER_TEMP 'inno'
+          Invoke-WebRequest 'https://github.com/jrsoftware/issrc/releases/download/is-6_7_4/innosetup-6.7.4.exe' -OutFile $download
+          if ((Get-FileHash $download).Hash -ne 'A549929319F9120716677C685535CA4671E4B937B5FDC87E2585F32D8EB30E8C') { throw 'Compiler checksum mismatch' }
+          $process = Start-Process $download -ArgumentList @('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/CURRENTUSER','/NOICONS',('/DIR="' + $compiler + '"')) -WindowStyle Hidden -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw 'Compiler installation failed' }
+          $compiler | Out-File -FilePath $env:GITHUB_PATH -Append
       - run: python packaging/build.py
       - name: Smoke-test the packaged app
         run: python tests_public/smoke_bundle.py
+      - name: Test Windows installation and upgrade
+        if: runner.os == 'Windows'
+        run: python tests_public/smoke_installer.py
       - uses: actions/upload-artifact@v4
         with:
           name: bundle-${{ matrix.os }}
@@ -47,4 +61,4 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           RELEASE_TAG: ${{ github.ref_name }}
-        run: gh release create "$RELEASE_TAG" release/* --title "Plex Presence $RELEASE_TAG" --notes "Experimental client-free Plex presence with a local setup GUI. Download the archive for your OS and architecture, extract it, and launch PlexPresence. See the README for Discord application setup, unsigned-build notes, and privacy details." --verify-tag
+        run: gh release create "$RELEASE_TAG" release/* --title "Plex Presence $RELEASE_TAG" --notes "Download PlexPresence-Setup-windows-x64.exe for guided Windows installation with shortcuts and an uninstaller. Python and dependencies are bundled. Includes a 12-part setup guide, simple Discord desktop mode, and optional always-on mode. Other platforms: extract the matching archive. Builds are unsigned; see README for details." --verify-tag

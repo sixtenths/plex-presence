@@ -88,6 +88,9 @@ class ServiceTests(unittest.TestCase):
         self.directory = tempfile.TemporaryDirectory()
         self.addCleanup(self.directory.cleanup)
         self.service = Service(self.directory.name)
+        blocker = patch("plex_presence.desktop.DesktopPresence._connect", side_effect=OSError("test: Discord offline"))
+        blocker.start()
+        self.addCleanup(blocker.stop)
 
     def test_fresh_install_is_empty_and_unique(self):
         status = self.service.status()
@@ -153,6 +156,7 @@ class ServiceTests(unittest.TestCase):
         self.service.publisher.sync.assert_called_with({"details":"Movie"})
 
     def test_switch_accounts_requires_disconnect(self):
+        self.service.action("/api/discord/mode", {"mode":"headless"})
         save_private(self.service.token_path, {"access_token":"PRIVATE"})
         with self.assertRaises(ValueError):
             self.service.action("/api/discord/connect", {"client_id":"123456789012345678"})

@@ -1,5 +1,7 @@
 # Security and privacy
 
+Discord desktop mode uses local IPC to the signed-in desktop client and stores no Discord OAuth tokens. The bundled public application ID is not a credential or server/account identifier. The OAuth behavior described below applies to Always-on mode.
+
 Do not post Plex tokens, Discord OAuth tokens, configuration files, or full authorization URLs in issues. Report a problem without credentials or account data first. For a sensitive vulnerability, use GitHub's private vulnerability reporting if enabled for this repository.
 
 The GUI binds only to 127.0.0.1. Requests that modify settings require the expected Origin and a per-process CSRF token. Do not expose it using a reverse proxy or port forwarding to the internet. For a remote machine, use an SSH local tunnel.

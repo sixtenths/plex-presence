@@ -1,12 +1,12 @@
 # Plex Presence
 
-Show your Plex playback on your own Discord profile, with a local setup GUI and **no Discord desktop client required**. Runs on Windows, macOS, Linux, and a 64-bit Raspberry Pi.
+Show your Plex playback on your own Discord profile, with a guided local setup GUI and **your choice of Discord desktop or always-on mode**. Runs on Windows, macOS, Linux, and a 64-bit Raspberry Pi.
 
 [Download a release](https://github.com/sixtenths/plex-presence/releases) · [Build status](https://github.com/sixtenths/plex-presence/actions) · [Security and privacy](SECURITY.md)
 
 ![Local setup GUI](docs/setup.png)
 
-**Experimental:** Discord's OAuth permission is documented, but the headless presence publishing endpoint is not a stable public API. Discord may change or disable it. Each person must create their own Discord application and enable Social SDK. This independent community project is inspired by [phin05/discord-rich-presence-plex](https://github.com/phin05/discord-rich-presence-plex).
+**Experimental:** Discord's OAuth permission is documented, but the headless presence publishing endpoint is not a stable public API. Discord may change or disable it. Always-on mode requires your own Discord application and Social SDK; desktop mode does not. This independent community project is inspired by [phin05/discord-rich-presence-plex](https://github.com/phin05/discord-rich-presence-plex).
 
 ## Features
 
@@ -22,11 +22,15 @@ Playback is polled roughly every five seconds. Network latency, Plex session rep
 
 ## Download and run
 
-Open [Releases](https://github.com/sixtenths/plex-presence/releases), choose the archive for your machine, and extract the **whole folder** before launching it. Downloads include Python.
+**Windows: download [PlexPresence-Setup-windows-x64.exe](https://github.com/sixtenths/plex-presence/releases/latest/download/PlexPresence-Setup-windows-x64.exe), run the installer, then open Plex Presence from its Start menu or desktop shortcut.** It installs for your Windows user, includes Python and dependencies, and registers an uninstaller. Quit the app before upgrading. Uninstall removes the program; saved account settings remain in the separate data directory below.
+
+A **12-part setup guide opens on first launch**. Use **Help / Setup guide** to reopen it. It explains installation, Plex Home, shared servers, both Discord modes, artwork, troubleshooting, everyday use, privacy, and Raspberry Pi setup.
+
+On macOS/Linux, choose the archive for your machine and extract the **whole folder** before launching. All native downloads include Python and dependencies.
 
 | Platform | Download | Launch |
 | --- | --- | --- |
-| Windows x64 | `PlexPresence-windows-x64.zip` | `PlexPresence.exe` |
+| Windows x64 | `PlexPresence-Setup-windows-x64.exe` | Install, then use the Plex Presence shortcut |
 | macOS Apple Silicon | `PlexPresence-macos-arm64.zip` | `PlexPresence.app` |
 | macOS Intel | `PlexPresence-macos-x64.zip` | `PlexPresence.app` |
 | Linux / Raspberry Pi arm64 | `PlexPresence-linux-arm64.tar.gz` | `./PlexPresence/PlexPresence` |
@@ -36,7 +40,7 @@ Builds are unsigned and macOS builds are not notarized. Windows SmartScreen or m
 
 Native builds are tested on the current Windows GitHub runner, macOS 15 (both architectures), and Ubuntu 22.04 (both architectures). Older operating systems are not guaranteed. Linux binaries require glibc 2.35 or newer; Alpine/musl is unsupported. For older compatible Linux systems, use Python 3.11+ from source. No 32-bit Pi or Windows ARM native build is supplied.
 
-The app opens `http://127.0.0.1:8765` in your default browser. Closing the browser leaves the watcher running. Use **Quit app** in the GUI to stop it and clear presence. Launch it again to resume with saved settings. Automatic launch at login is not configured for you.
+The app opens `http://127.0.0.1:8765` in your default browser. Closing the browser leaves the watcher running. Use **Quit app** in the GUI to stop it and clear presence. Launch it again to resume with saved settings. The Windows installer enables **Start when I sign in** by default; you can uncheck it during installation or disable Plex Presence in Windows Startup apps. Startup runs quietly without opening a browser. Right-click the tray icon for **Open settings / setup guide** or **Quit Plex Presence**. Launching the Start menu shortcut again opens the already-running app. macOS/Linux users can configure login startup using their OS or service manager.
 
 ## First-time setup
 
@@ -58,6 +62,10 @@ The notification listener reconnects automatically and clears presence on pause,
 
 ### 2. Discord
 
+**Discord desktop (default):** open Discord on the same Windows, macOS, or Linux computer and sign in. Plex Presence connects automatically. No developer registration or OAuth consent is needed. The default public application ID supplies the Plex app name; it is not a credential or connection to the project owner's account or server. Advanced users can enter a custom Application ID. Browser-only Discord, phones, and tablets do not provide this local connection.
+
+**Always-on / no Discord client:** choose this mode and click **Apply connection mode**, then follow these steps:
+
 1. Open the [Developer Portal](https://discord.com/developers/applications) and create your own application, for example **Plex**. Its name can appear on your profile.
 2. Under **Social SDK → Getting Started**, complete the activation form with your own details and enable Social SDK. Otherwise authorization can fail with `invalid_scope`.
 3. Under **OAuth2**, enable **Public Client** and save.
@@ -67,7 +75,7 @@ The notification listener reconnects automatically and clears presence on pause,
 
 Scopes are `openid sdk.social_layer_presence`, using PKCE. Discord bundles profile, social/friend, invite, and activity permissions into the presence scope; review the actual consent screen. This app uses authorization refresh and presence publishing. See [Discord's scope documentation](https://docs.discord.com/developers/discord-social-sdk/core-concepts/oauth2-scopes).
 
-Every install has separate credentials. Nothing connects to the repository owner's Plex server, Discord app, or account. To switch Discord accounts, disconnect first and reconnect using the intended account in your browser. Disconnect removes local tokens; revoke the grant remotely in Discord's **Authorized Apps** settings.
+Every install has separate credentials. Nothing connects to the project owner's Plex server or Discord account. Desktop mode shares a public application identifier for the app name; always-on mode uses your own app. To switch Discord accounts, disconnect first and reconnect using the intended account in your browser. Disconnect removes local tokens; revoke the grant remotely in Discord's **Authorized Apps** settings.
 
 ### 3. Playback
 
@@ -75,7 +83,7 @@ Save your preferences and start Plex playback. The GUI shows the Plex state and 
 
 ## Run from source
 
-Requires Python 3.11+ and Git. Runtime code uses the Python standard library and `websocket-client`, installed automatically by `pip install .`.
+Requires Python 3.11+ and Git. Runtime code uses the Python standard library plus `websocket-client` and `pypresence` (and Windows tray dependencies), installed automatically by `pip install .`.
 
 ```sh
 git clone https://github.com/sixtenths/plex-presence.git
@@ -149,7 +157,7 @@ python packaging/build.py
 python tests_public/smoke_bundle.py
 ```
 
-Build on the target OS and architecture. GitHub Actions runs tests, packages each app, then launches each native bundle to test its GUI API and shutdown. Version tags publish release downloads and SHA-256 checksums only after every native job passes. Tests use mocked account responses and never require live credentials.
+Build on the target OS and architecture. Windows requires Inno Setup 6 (ISCC.exe on PATH or its default installation directory). GitHub Actions runs tests, packages each app, then launches each native bundle to test its GUI API and shutdown. Version tags publish release downloads and SHA-256 checksums only after every native job passes. Tests use mocked account responses and never require live credentials.
 
 ## License
 

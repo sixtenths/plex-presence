@@ -1,5 +1,6 @@
 """Exercise the actual frozen HTTP app without opening a browser or signing in."""
 import json
+import os
 from pathlib import Path
 import platform
 import socket
@@ -12,7 +13,8 @@ root = Path(__file__).resolve().parents[1]
 if platform.system() == "Darwin":
     binary = root / "dist/PlexPresence.app/Contents/MacOS/PlexPresence"
 else:
-    binary = root / "dist/PlexPresence" / ("PlexPresence.exe" if platform.system() == "Windows" else "PlexPresence")
+    binary = root / "dist/PlexPresence/PlexPresence.exe" if platform.system() == "Windows" else root / "dist/PlexPresence/PlexPresence"
+binary = Path(os.environ.get("PLEX_BUNDLE_BINARY", binary))
 with socket.socket() as probe:
     probe.bind(("127.0.0.1", 0))
     port = probe.getsockname()[1]
@@ -30,8 +32,8 @@ with tempfile.TemporaryDirectory() as directory:
                 if process.poll() is not None or time.monotonic() > deadline:
                     raise RuntimeError("Packaged app did not start")
                 time.sleep(.5)
-        assert not status["discord_connected"] and not status["plex_connected"]
-        for path, text in (("/", b"Choose your Plex"), ("/app.js", b"api/plex/connect"), ("/style.css", b".card")):
+        assert not status["plex_connected"] and status["settings"]["discord_mode"] == "desktop"
+        for path, text in (("/", b"Choose your Plex"), ("/app.js", b"api/plex/connect"), ("/style.css", b".card"), ("/guide.html", b"setup-guide"), ("/guide.js", b"showModal"), ("/guide.css", b"guide-body")):
             with urlopen(origin + path, timeout=3) as r:
                 assert text in r.read(), path
         req = Request(origin + "/api/quit", data=b"{}", headers={"Content-Type": "application/json", "Origin": origin, "X-CSRF-Token": status["csrf"]})

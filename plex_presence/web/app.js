@@ -15,6 +15,8 @@ async function perform(button, task) {
   finally { if (button) button.disabled = false; }
 }
 function fillSettings(s) {
+  $('discord-mode').value = s.discord_mode || 'desktop';
+  $('desktop-client-id').value = s.desktop_client_id || '';
   $('use-plex-artwork').checked = s.use_plex_artwork === true;
   $('username').value = s.plex_username || '';
   $('manual-user').value = s.plex_username || '';
@@ -40,6 +42,8 @@ async function refresh(fill = false) {
     $('plex-disconnect').hidden = !value.plex_connected;
     $('pin-pending').hidden = !value.plex_signin_pending;
     $('chosen-server').textContent = s.server_name ? `Selected: ${s.server_name} · ${s.plex_url}` : 'No server selected.';
+    $('headless-setup').hidden = s.discord_mode !== 'headless';
+    $('desktop-setup').hidden = s.discord_mode === 'headless';
     $('discord-connected').hidden = !value.discord_connected;
     $('discord-setup').hidden = value.discord_connected;
     const plexLabels = {setup_required:'Choose a server',playing:'Playing',paused:'Paused · hidden',idle:'Waiting for playback',buffering:'Buffering · hidden',unavailable:'Server unavailable',disabled:'Sharing disabled'};
@@ -91,3 +95,5 @@ setInterval(() => refresh(), 5000);
 
 $('home-load').onclick = e => perform(e.currentTarget, async () => { const result = await post('/api/plex/home'); $('home-profile').replaceChildren(new Option('Choose your profile', '')); for (const p of result.profiles) $('home-profile').add(new Option(p.name + (p.protected ? ' (PIN required)' : ''), p.id)); });
 $('home-form').onsubmit = e => { e.preventDefault(); perform(e.submitter, async () => { try { await post('/api/plex/profile', {profile_id:$('home-profile').value, pin:$('home-pin').value}); } finally { $('home-pin').value = ''; } await servers(); message('Profile selected. Choose one of its accessible servers.'); }); };
+
+$('mode-form').onsubmit = e => { e.preventDefault(); perform(e.submitter, async () => { await post('/api/discord/mode', {mode:$('discord-mode').value, client_id:$('desktop-client-id').value}); message('Connection mode saved.'); }); };

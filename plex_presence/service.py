@@ -7,6 +7,7 @@ from pathlib import Path
 from .artwork import ArtworkResolver
 from .selected_artwork import SelectedArtworkResolver
 from .discord_presence import DiscordPresence
+from .desktop import DesktopPresence, DEFAULT_APPLICATION_ID
 from .oauth import DiscordAuth
 from .plex import PlexWatcher, PlexError
 from .plex_account import PlexAccount, truth
@@ -25,6 +26,8 @@ class Service:
         for key in ("enabled", "artwork_enabled", "show_progress"):
             self.config.setdefault(key, True)
         self.config.setdefault("use_plex_artwork", False)
+        # Preserve existing headless installs; new users get the simple desktop path.
+        self.config.setdefault("discord_mode", "headless" if self.token_path.exists() or self.config.get("discord_client_id") else "desktop")
         self.config.setdefault("plex_client_identifier", secrets.token_hex(16))
         save_private(self.config_path, self.config)
         self.port = port
@@ -52,18 +55,21 @@ class Service:
             watcher = NotificationWatcher if self.config.get("plex_source") == "notifications" else PlexWatcher
             self.watcher = watcher(dict(self.config, plex_timeout=4, poll_interval=5))
             self.artwork = (SelectedArtworkResolver if self.config.get("use_plex_artwork") else ArtworkResolver)(self.config)
-        if self.config.get("discord_client_id") and self.token_path.exists():
+        if self.config["discord_mode"] == "desktop":
+            if not isinstance(self.publisher, DesktopPresence):
+                self.publisher = DesktopPresence(self.config.get("desktop_client_id") or DEFAULT_APPLICATION_ID)
+        elif self.config.get("discord_client_id") and self.token_path.exists():
             self.publisher = DiscordPresence(self.config, self.token_path)
         self.wake.set()
 
     def status(self):
         with self.lock:
-            return dict(copy.deepcopy(self.snapshot), csrf=self.csrf, redirect_uri=self.oauth.redirect_uri,
+            return dict(copy.deepcopy(self.snapshot), app_id="plex-presence", csrf=self.csrf, redirect_uri=self.oauth.redirect_uri,
                 plex_connected=bool(self.config.get("plex_account_token") or self.config.get("plex_token")),
-                discord_connected=self.token_path.exists(), plex_signin_pending=bool(self.account.pending),
+                discord_connected=(self.publisher.status.get("state") in ("idle", "active") if isinstance(self.publisher, DesktopPresence) else self.token_path.exists()), plex_signin_pending=bool(self.account.pending),
                 settings={k: self.config.get(k, "") for k in ("server_name", "plex_url", "plex_username", "discord_client_id",
                                                               "enabled", "artwork_enabled", "show_progress", "use_plex_artwork",
-                                                              "plex_profile_name", "plex_source")},
+                                                              "plex_profile_name", "plex_source", "discord_mode", "desktop_client_id")},
                 auth_error=self.auth_error, experimental=True)
 
     def save(self):
@@ -77,6 +83,23 @@ class Service:
 
     def action(self, path, data):
         with self.lock:
+            if path == "/api/discord/mode":
+                mode = data.get("mode")
+                if mode not in ("desktop", "headless"):
+                    raise ValueError("Choose Desktop or Always-on mode.")
+                client_id = str(data.get("client_id", "")).strip()
+                if client_id and (not client_id.isascii() or not client_id.isdigit() or not 16 <= len(client_id) <= 22):
+                    raise ValueError("Enter a valid Application ID, or leave it empty to use Plex Presence.")
+                self.clear_presence()
+                if self.publisher and self.publisher.status.get("state") in ("retrying", "error", "needs_setup"):
+                    raise ValueError("The current activity could not be cleared. Retry when Discord reconnects.")
+                if isinstance(self.publisher, DesktopPresence):
+                    self.publisher.close()
+                self.publisher = None
+                self.oauth.pending = None
+                self.config.update(discord_mode=mode, desktop_client_id=client_id)
+                self.save()
+                return {"ok": True}
             if path == "/api/plex/connect":
                 return {"url": self.account.begin(self.origin)}
             if path == "/api/plex/poll":
@@ -168,11 +191,15 @@ class Service:
                 self.save()
                 return {"ok": True}
             if path == "/api/discord/connect":
+                if self.config["discord_mode"] != "headless":
+                    raise ValueError("Choose Always-on mode first. Desktop mode needs no Discord authorization.")
                 if self.token_path.exists():
                     raise ValueError("Disconnect the current Discord account before linking another.")
                 self.auth_error = ""
                 return {"url": self.oauth.begin(data.get("client_id", ""))}
             if path == "/api/discord/disconnect":
+                if self.config["discord_mode"] != "headless":
+                    raise ValueError("Desktop mode follows the account signed into Discord. Use connection mode to switch.")
                 self.clear_presence()
                 state = self.snapshot["discord"].get("state")
                 if self.publisher and state not in ("idle", "not_connected", "needs_login"):
@@ -203,6 +230,8 @@ class Service:
     def finish_oauth(self, query):
         with self.lock:
             try:
+                if self.config["discord_mode"] != "headless":
+                    raise ValueError("Choose Always-on mode before authorizing Discord.")
                 client_id, tokens = self.oauth.finish(query)
                 if self.token_path.exists():
                     raise ValueError("A Discord account is already connected. Disconnect it first.")
@@ -262,3 +291,5 @@ class Service:
             if isinstance(self.watcher, NotificationWatcher):
                 self.watcher.close()
             self.clear_presence()
+            if isinstance(self.publisher, DesktopPresence):
+                self.publisher.close()

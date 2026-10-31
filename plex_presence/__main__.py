@@ -1,5 +1,6 @@
 """Run the GUI on Windows, macOS or Linux."""
 import argparse
+import json
 import signal
 import sys
 import threading
@@ -10,6 +11,8 @@ from .service import Service
 from .server import make_server
 from .storage import data_directory
 from .instance import InstanceLock
+from .tray import start_tray
+from urllib.request import urlopen
 
 
 def main():
@@ -29,6 +32,16 @@ def main():
     except (OSError, ValueError):
         if instance:
             instance.close()
+        if not args.no_browser:
+            try:
+                origin = f"http://127.0.0.1:{args.port}"
+                with urlopen(origin + "/api/status", timeout=2) as response:
+                    running = json.load(response)
+                if running.get("app_id") == "plex-presence":
+                    webbrowser.open(origin)
+                    return 0
+            except (OSError, ValueError):
+                pass
         message = f"Plex Presence could not start. Check the data directory and whether port {args.port} is already in use."
         if sys.stderr:
             print(message, file=sys.stderr)
@@ -45,6 +58,7 @@ def main():
         signal.signal(sig, lambda *_: (service.stop.set(), service.wake.set()))
     worker.start()
     http.start()
+    tray = start_tray(service)
     if sys.stdout:
         print(f"Plex Presence {__version__}: {service.origin}\nClose the app using Quit in its GUI or Ctrl+C.")
     if not args.no_browser:
@@ -58,6 +72,8 @@ def main():
         worker.join(timeout=25)
         server.shutdown()
         server.server_close()
+        if tray:
+            tray.stop()
         instance.close()
     return 0
 

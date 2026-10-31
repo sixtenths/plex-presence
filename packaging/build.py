@@ -1,5 +1,7 @@
 """Build a native portable app on its target OS; never cross-compile."""
 import hashlib
+import os
+import tomllib
 from pathlib import Path
 import platform
 import shutil
@@ -26,7 +28,10 @@ if os_name == "macos":
     archive = Path(str(base) + ".zip")
     subprocess.run(["ditto", "-c", "-k", "--sequesterRsrc", "--keepParent", str(root / "dist/PlexPresence.app"), str(archive)], check=True)
 elif os_name == "windows":
-    archive = Path(shutil.make_archive(str(base), "zip", root / "dist", "PlexPresence"))
+    compiler = shutil.which("iscc") or str(Path(os.environ.get("ProgramFiles(x86)", "C:/Program Files (x86)")) / "Inno Setup 6/ISCC.exe")
+    version = tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))["project"]["version"]
+    subprocess.run([compiler, f"/DAppVersion={version}", str(root / "packaging/windows.iss")], cwd=root, check=True)
+    archive = output / "PlexPresence-Setup-windows-x64.exe"
 else:
     archive = Path(shutil.make_archive(str(base), "gztar", root / "dist", "PlexPresence"))
 Path(str(archive) + ".sha256").write_text(hashlib.sha256(archive.read_bytes()).hexdigest() + "  " + archive.name + "\n", encoding="ascii")

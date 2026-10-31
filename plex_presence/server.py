@@ -39,6 +39,7 @@ def handler_for(service):
                 return self.reply(403, {"error": "Use the 127.0.0.1 address shown by the application."})
             url = urlsplit(self.path)
             static = {"/": ("index.html", "text/html"), "/app.js": ("app.js", "application/javascript"), "/style.css": ("style.css", "text/css")}
+            static.update({"/guide.html": ("guide.html", "text/html"), "/guide.js": ("guide.js", "application/javascript"), "/guide.css": ("guide.css", "text/css")})
             if url.path in static:
                 file, kind = static[url.path]
                 return self.reply(200, (WEB / file).read_bytes(), kind)
