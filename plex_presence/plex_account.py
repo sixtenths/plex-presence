@@ -1,8 +1,18 @@
 """Plex PIN sign-in and server discovery. Tokens never enter browser responses."""
 import time
+import json
+import re
+import xml.etree.ElementTree as ET
+from urllib.request import Request, build_opener
 from urllib.parse import urlencode
-from .network import request_json, server_url
+from .network import request_json, server_url, NoRedirect
 from .plex import PlexWatcher
+from .notifications import connect_notifications
+from websocket import WebSocketException
+
+
+def truth(value):
+    return value is True or str(value).lower() in ("1", "true")
 
 
 class PlexAccount:
@@ -40,7 +50,42 @@ class PlexAccount:
         if not name:
             raise ValueError("Could not read the Plex account name.")
         self.pending = None
-        return {"token": token, "username": name}
+        return {"token": token, "username": name, "id": str(account.get("id", ""))}
+
+    def _home_request(self, token, path, pin=None):
+        url = "https://plex.tv/api/home/users" + path
+        if pin:
+            url += "?" + urlencode({"pin": pin})
+        req = Request(url, headers=self.headers(token), data=b"" if pin is not None else None,
+                      method="POST" if pin is not None else "GET")
+        try:
+            with build_opener(NoRedirect()).open(req, timeout=6) as response:
+                raw = response.read(1024 * 1024 + 1)
+            if len(raw) > 1024 * 1024 or b"<!DOCTYPE" in raw.upper() or b"<!ENTITY" in raw.upper():
+                raise ValueError()
+            return ET.fromstring(raw)
+        except (OSError, ValueError, ET.ParseError):
+            raise ValueError("Plex Home access failed. Check your account and profile PIN, then retry.") from None
+
+    def home_users(self, token):
+        root = self._home_request(token, "")
+        return [{"id": str(row.get("id", "")), "name": row.get("title") or row.get("username") or "Plex profile",
+                 "protected": truth(row.get("protected"))} for row in root.findall("User")
+                if re.fullmatch(r"[0-9]+", row.get("id", ""))]
+
+    def switch_home(self, token, user_id, pin):
+        if not re.fullmatch(r"[0-9]{1,20}", str(user_id)):
+            raise ValueError("Choose a Plex Home profile.")
+        if pin and not re.fullmatch(r"[0-9]{4}", str(pin)):
+            raise ValueError("Enter the profile's four-digit PIN.")
+        root = self._home_request(token, "/" + str(user_id) + "/switch", str(pin or ""))
+        switched = root.get("authenticationToken")
+        if not switched:
+            raise ValueError("Plex did not authorize this Home profile.")
+        account = request_json("https://plex.tv/api/v2/user", headers=self.headers(switched))
+        if str(account.get("id", "")) != str(user_id):
+            raise ValueError("Plex returned a different profile. Sign in again.")
+        return {"token": switched, "username": account.get("username") or account.get("title"), "id": str(user_id)}
 
     def resources(self, token):
         value = request_json("https://plex.tv/api/v2/resources?includeHttps=1&includeRelay=1",
@@ -61,12 +106,20 @@ class PlexAccount:
                 identity = request_json(url + "/identity", headers=self.headers(token), timeout=3)
                 if identity.get("MediaContainer", {}).get("machineIdentifier") != resource.get("clientIdentifier"):
                     continue
-                request_json(url + "/status/sessions", headers=self.headers(token), timeout=3)
+                owned = truth(resource.get("owned"))
+                if owned:
+                    request_json(url + "/status/sessions", headers=self.headers(token), timeout=3)
+                else:
+                    request_json(url + "/library/sections", headers=self.headers(token), timeout=3)
+                    connection = connect_notifications({"plex_url": url, "plex_token": token,
+                                                        "plex_client_identifier": self.client_id})
+                    connection.close()
                 return {"plex_url": url, "plex_token": token, "server_name": resource.get("name", "Plex server"),
-                        "server_id": resource.get("clientIdentifier", "")}
-            except (OSError, ValueError, TypeError):
+                        "server_id": resource.get("clientIdentifier", ""), "plex_source": "sessions" if owned else "notifications",
+                        "plex_server_owned": owned}
+            except (OSError, ValueError, TypeError, WebSocketException):
                 continue
-        raise ValueError("Cannot reach this server's playback sessions. It must be online and your account must be allowed to read sessions. Try a direct address in Advanced setup.")
+        raise ValueError("Cannot connect using this account. Check server access and connectivity. Shared servers must allow your account's playback notification connection.")
 
     def test_manual(self, url, token):
         url = server_url(url)
@@ -77,6 +130,8 @@ class PlexAccount:
         return {"plex_url": url, "plex_token": token, "server_name": identity.get("MediaContainer", {}).get("friendlyName", "Plex server")}
 
     def users(self, config):
+        if config.get("plex_source") == "notifications":
+            return [config["plex_username"]]
         result = {str(config.get("plex_username", ""))}
         data = request_json(config["plex_url"] + "/status/sessions", headers=self.headers(config["plex_token"]))
         for item in data.get("MediaContainer", {}).get("Metadata", []):

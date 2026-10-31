@@ -62,12 +62,12 @@ class PlexAccountTests(unittest.TestCase):
             value = self.account.poll()
         self.assertIn("app.plex.tv/auth", url)
         self.assertNotIn("TEST_PRIVATE", url)
-        self.assertEqual(value, {"token":"TEST_PRIVATE", "username":"viewer"})
+        self.assertEqual(value, {"token":"TEST_PRIVATE", "username":"viewer", "id":""})
         self.assertIsNone(self.account.pending)
         self.assertEqual(http.call_args.kwargs["headers"]["X-Plex-Token"], "TEST_PRIVATE")
 
     def test_server_identity_must_match_discovered_resource(self):
-        resource = {"clientIdentifier":"correct", "accessToken":"TEST_PRIVATE", "name":"My server", "connections":[{"uri":"http://192.0.2.2:32400"}]}
+        resource = {"owned":True, "clientIdentifier":"correct", "accessToken":"TEST_PRIVATE", "name":"My server", "connections":[{"uri":"http://192.0.2.2:32400"}]}
         with patch("plex_presence.plex_account.request_json", return_value={"MediaContainer":{"machineIdentifier":"wrong"}}):
             with self.assertRaises(ValueError):
                 self.account.choose(resource)

@@ -32,6 +32,9 @@ async function refresh(fill = false) {
     const s = value.settings;
     if (!initialized || fill) { fillSettings(s); initialized = true; }
     $('redirect').textContent = value.redirect_uri;
+    $('profile-name').textContent = s.plex_profile_name ? `Selected profile: ${s.plex_profile_name}` : '';
+    $('username').readOnly = s.plex_source === 'notifications';
+    $('refresh-users').disabled = s.plex_source === 'notifications';
     $('plex-account').textContent = value.plex_connected ? `Connected · ${s.plex_username || 'Plex account'}` : 'Sign in securely at Plex.';
     $('plex-connect').textContent = value.plex_connected ? 'Switch account ↗' : 'Connect Plex ↗';
     $('plex-disconnect').hidden = !value.plex_connected;
@@ -85,3 +88,6 @@ $('quit').onclick = e => perform(e.currentTarget, async () => { await post('/api
 $('poster').onerror = () => { $('poster').hidden = true; $('poster-placeholder').hidden = false; };
 refresh().then(async () => { if (new URLSearchParams(location.search).has('plex')) await checkPin(); });
 setInterval(() => refresh(), 5000);
+
+$('home-load').onclick = e => perform(e.currentTarget, async () => { const result = await post('/api/plex/home'); $('home-profile').replaceChildren(new Option('Choose your profile', '')); for (const p of result.profiles) $('home-profile').add(new Option(p.name + (p.protected ? ' (PIN required)' : ''), p.id)); });
+$('home-form').onsubmit = e => { e.preventDefault(); perform(e.submitter, async () => { try { await post('/api/plex/profile', {profile_id:$('home-profile').value, pin:$('home-pin').value}); } finally { $('home-pin').value = ''; } await servers(); message('Profile selected. Choose one of its accessible servers.'); }); };

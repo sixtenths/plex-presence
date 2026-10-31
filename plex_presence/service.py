@@ -9,7 +9,8 @@ from .selected_artwork import SelectedArtworkResolver
 from .discord_presence import DiscordPresence
 from .oauth import DiscordAuth
 from .plex import PlexWatcher, PlexError
-from .plex_account import PlexAccount
+from .plex_account import PlexAccount, truth
+from .notifications import NotificationWatcher
 from .playback import activity_finished
 from .storage import read_json, save_private
 
@@ -36,6 +37,7 @@ class Service:
         self.account = PlexAccount(self.config["plex_client_identifier"])
         self.oauth = DiscordAuth(self.origin + "/callback")
         self.resources = {}
+        self.home_profiles = {}
         self.auth_error = ""
         self.publisher = self.watcher = self.artwork = None
         self.snapshot = {"plex": "setup_required", "discord": {"state": "not_connected", "message": "Connect Discord to start."}, "activity": None}
@@ -43,9 +45,12 @@ class Service:
 
     def reconfigure(self):
         self.generation += 1
+        if isinstance(self.watcher, NotificationWatcher):
+            self.watcher.close()
         self.watcher = self.artwork = None
         if all(self.config.get(k) for k in ("plex_url", "plex_token", "plex_username")):
-            self.watcher = PlexWatcher(dict(self.config, plex_timeout=4, poll_interval=5))
+            watcher = NotificationWatcher if self.config.get("plex_source") == "notifications" else PlexWatcher
+            self.watcher = watcher(dict(self.config, plex_timeout=4, poll_interval=5))
             self.artwork = (SelectedArtworkResolver if self.config.get("use_plex_artwork") else ArtworkResolver)(self.config)
         if self.config.get("discord_client_id") and self.token_path.exists():
             self.publisher = DiscordPresence(self.config, self.token_path)
@@ -57,7 +62,8 @@ class Service:
                 plex_connected=bool(self.config.get("plex_account_token") or self.config.get("plex_token")),
                 discord_connected=self.token_path.exists(), plex_signin_pending=bool(self.account.pending),
                 settings={k: self.config.get(k, "") for k in ("server_name", "plex_url", "plex_username", "discord_client_id",
-                                                              "enabled", "artwork_enabled", "show_progress", "use_plex_artwork")},
+                                                              "enabled", "artwork_enabled", "show_progress", "use_plex_artwork",
+                                                              "plex_profile_name", "plex_source")},
                 auth_error=self.auth_error, experimental=True)
 
     def save(self):
@@ -78,19 +84,45 @@ class Service:
                 if not account:
                     return {"connected": False}
                 self.clear_presence()
-                for key in ("plex_url", "plex_token", "server_name", "server_id", "plex_user_id"):
+                for key in ("plex_url", "plex_token", "server_name", "server_id", "plex_user_id", "plex_source", "plex_server_owned"):
                     self.config.pop(key, None)
-                self.config.update(plex_account_token=account["token"], plex_username=account["username"])
+                self.config.update(plex_account_token=account["token"], plex_root_token=account["token"],
+                    plex_account_user_id=account.get("id", ""), plex_profile_name=account["username"], plex_username=account["username"])
                 self.resources = {}
+                self.home_profiles = {}
                 self.save()
                 return {"connected": True}
+            if path == "/api/plex/home":
+                token = self.config.get("plex_root_token") or self.config.get("plex_account_token")
+                if not token:
+                    raise ValueError("Sign in to Plex first.")
+                profiles = self.account.home_users(token)
+                self.home_profiles = {p["id"]: p for p in profiles}
+                return {"profiles": profiles}
+            if path == "/api/plex/profile":
+                profile = self.home_profiles.get(str(data.get("profile_id", "")))
+                if not profile:
+                    raise ValueError("Load your Home profiles and choose one.")
+                pin = str(data.get("pin", ""))
+                if profile["protected"] and not pin:
+                    raise ValueError("This profile requires its PIN.")
+                root = self.config.get("plex_root_token") or self.config.get("plex_account_token")
+                account = self.account.switch_home(root, profile["id"], pin)
+                self.clear_presence()
+                for key in ("plex_url", "plex_token", "server_name", "server_id", "plex_user_id", "plex_source", "plex_server_owned"):
+                    self.config.pop(key, None)
+                self.config.update(plex_root_token=root, plex_account_token=account["token"],
+                    plex_account_user_id=account["id"], plex_profile_name=account["username"], plex_username=account["username"])
+                self.resources = {}
+                self.save()
+                return {"ok": True}
             if path == "/api/plex/servers":
                 token = self.config.get("plex_account_token")
                 if not token:
                     raise ValueError("Sign in to Plex first, or use Advanced setup.")
                 values = self.account.resources(token)
                 self.resources = {str(r["clientIdentifier"]): r for r in values if r.get("clientIdentifier")}
-                return {"servers": [{"id": k, "name": r.get("name", "Plex server"), "owned": bool(r.get("owned"))} for k, r in self.resources.items()]}
+                return {"servers": [{"id": k, "name": r.get("name", "Plex server"), "owned": truth(r.get("owned"))} for k, r in self.resources.items()]}
             if path == "/api/plex/select":
                 resource = self.resources.get(str(data.get("server_id", "")))
                 if resource is None:
@@ -98,6 +130,9 @@ class Service:
                 values = self.account.choose(resource)
                 self.clear_presence()
                 self.config.update(values)
+                if values.get("plex_source") == "notifications":
+                    self.config["plex_username"] = self.config.get("plex_profile_name") or self.config["plex_username"]
+                    self.config.pop("plex_user_id", None)
                 self.save()
                 return {"ok": True}
             if path == "/api/plex/manual":
@@ -106,7 +141,7 @@ class Service:
                     raise ValueError("Enter the Plex username to track.")
                 values = self.account.test_manual(data.get("url", ""), data.get("token", ""))
                 self.clear_presence()
-                for key in ("plex_user_id", "server_id"):
+                for key in ("plex_user_id", "server_id", "plex_source", "plex_server_owned"):
                     self.config.pop(key, None)
                 self.config.update(values, plex_username=username)
                 self.save()
@@ -119,6 +154,8 @@ class Service:
                 username = str(data.get("plex_username", self.config.get("plex_username", ""))).strip()
                 if not username or len(username) > 128:
                     raise ValueError("Enter the Plex username to track.")
+                if self.config.get("plex_source") == "notifications" and username != self.config.get("plex_username"):
+                    raise ValueError("Shared-server mode follows the signed-in profile. Switch Plex Home profile to change users.")
                 for key in ("enabled", "artwork_enabled", "show_progress", "use_plex_artwork"):
                     if key in data and not isinstance(data[key], bool):
                         raise ValueError("Invalid setting value.")
@@ -153,6 +190,7 @@ class Service:
                     if (key.startswith("plex_") and key != "plex_client_identifier") or key in ("server_name", "server_id"):
                         self.config.pop(key, None)
                 self.resources = {}
+                self.home_profiles = {}
                 self.account.pending = None
                 self.save()
                 return {"ok": True}
@@ -221,4 +259,6 @@ class Service:
                     self.snapshot["discord"] = {"state": "error", "message": "An update failed. Retrying automatically."}
             self.wake.wait(5)
         with self.lock:
+            if isinstance(self.watcher, NotificationWatcher):
+                self.watcher.close()
             self.clear_presence()

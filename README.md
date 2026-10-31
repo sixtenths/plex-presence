@@ -42,11 +42,19 @@ The app opens `http://127.0.0.1:8765` in your default browser. Closing the brows
 
 ### 1. Plex
 
-Click **Connect Plex**, sign in on Plex's website, and approve the connection. Return to the GUI, refresh the server list if needed, choose a server, and click **Use server**. The app verifies access to its playback sessions.
+Click **Connect Plex**, sign in on Plex's website, and approve the connection. Return to the GUI, refresh the server list if needed, choose a server, and click **Use server**. Servers you own use session polling. Shared servers use a playback notification connection authenticated with your personal shared-server token, without requesting the owner-only session list.
 
-Enter the Plex username to track. **Find active users** suggests names from current playback; start a stream if a name is missing, or type the exact username yourself. A shared server can appear in discovery without granting permission to read sessions. The app cannot bypass Plex permissions.
+Enter the Plex username to track. **Find active users** suggests names from current playback; start a stream if a name is missing, or type the exact username yourself. In shared-server mode the tracked user is locked to the signed-in profile. After connecting or restarting the app, start or resume playback so Plex sends a fresh event. You still need library access and a reachable server; an offline server or denied notification connection cannot be bypassed.
 
 Advanced setup accepts your server URL, token, and username. Prefer HTTPS. Local HTTP sends the token unencrypted on your network. Never put a token in the URL or a public issue.
+
+### Plex Home / managed profiles
+
+If you watch as a Plex Home profile, expand **Plex Home: choose a profile**, click **Load Home profiles**, select the profile, and enter its four-digit PIN if protected. Click **Use this profile**, then select one of that profile's accessible servers. This obtains that profile's own access token; the PIN is not saved. You do not need the server owner's token.
+
+A managed profile cannot sign in independently: an existing full member of its Plex Home first signs in normally, then switches to the profile. The original login token is retained locally to allow later profile switching. Switching profiles clears the previous server selection. Regular shared users simply sign in with their own Plex account and choose a server marked **(shared)**; no Home switch is needed.
+
+The notification listener reconnects automatically and clears presence on pause, stop, disconnection, or when playback events go stale. It does not request control of the Plex player. See [Plex Home switching](https://support.plex.tv/articles/204232453-fast-user-switching/) and [managed accounts](https://support.plex.tv/articles/203948776-managed-users/).
 
 ### 2. Discord
 
@@ -67,7 +75,7 @@ Save your preferences and start Plex playback. The GUI shows the Plex state and 
 
 ## Run from source
 
-Requires Python 3.11+ and Git. Runtime code uses the Python standard library.
+Requires Python 3.11+ and Git. Runtime code uses the Python standard library and `websocket-client`, installed automatically by `pip install .`.
 
 ```sh
 git clone https://github.com/sixtenths/plex-presence.git
@@ -89,7 +97,7 @@ macOS / Linux (use `python3` for the initial venv command if needed):
 .venv/bin/python -m plex_presence
 ```
 
-Alternatively, run `python run.py` directly from the checkout.
+After installing dependencies, you can also run `python run.py` from the checkout.
 
 ## Pi / headless setup
 
@@ -125,7 +133,7 @@ Credentials are local plaintext files protected by user/file permissions, not a 
 | --- | --- |
 | `invalid_scope` | Enable Social SDK on your Discord app, then reconnect. |
 | Code exchange failed | Public Client enabled, exact redirect saved, same port and app ID. |
-| Server cannot connect | Reachability, TLS certificate, permission to read sessions. |
+| Server cannot connect | Reachability, TLS certificate, the selected profile’s library access and notification/session permissions. |
 | No playback | Server on, correct server and exact Plex username, playback active. |
 | Paused activity briefly lingers | Allow a poll and Discord refresh; check GUI retry status. |
 | Cannot start | Port or data directory already in use, or file permissions. |
