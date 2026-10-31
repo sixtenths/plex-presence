@@ -61,4 +61,5 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           RELEASE_TAG: ${{ github.ref_name }}
-        run: gh release create "$RELEASE_TAG" release/* --title "Plex Presence $RELEASE_TAG" --notes "Download PlexPresence-Setup-windows-x64.exe for guided Windows installation with shortcuts and an uninstaller. Python and dependencies are bundled. Includes a 12-part setup guide, simple Discord desktop mode, and optional always-on mode. Other platforms: extract the matching archive. Builds are unsigned; see README for details." --verify-tag
+        run: |
+          gh release create "$RELEASE_TAG" release/* --title "Plex Presence $RELEASE_TAG" --notes "Download PlexPresence-Setup-windows-x64.exe for guided Windows installation with shortcuts and an uninstaller. Python and dependencies are bundled. Includes a 12-part setup guide, simple Discord desktop mode, and optional always-on mode. Other platforms: extract the matching archive. Builds are unsigned; see README for details." --verify-tag
