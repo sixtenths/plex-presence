@@ -16,7 +16,7 @@ def verify_universal_bundle(app):
         with path.open('rb') as stream:
             magic = stream.read(4)
         if magic in MACHO:
-            subprocess.run(['lipo', '-verify_arch', 'arm64', 'x86_64', str(path)], check=True)
+            subprocess.run(['lipo', str(path), '-verify_arch', 'arm64', 'x86_64'], check=True)
             count += 1
     if count < 3:
         raise RuntimeError('The universal app is missing its native runtime binaries')
