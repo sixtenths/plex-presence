@@ -10,7 +10,7 @@ Click to download the latest Windows installer directly. Run it, then open Plex 
 
 ![Native Plex Presence playback view](docs/screenshots/playback.png)
 
-The native window above is rendered with example playback data. [Explore the app screenshots below](#screenshots) or [download the full screenshot pack](https://github.com/sixtenths/plex-presence/releases/download/v0.3.0/PlexPresence-v0.3.0-screenshots.zip).
+The native window above is rendered with example playback data. [Explore the app screenshots below](#screenshots) or [download the full screenshot pack](https://github.com/sixtenths/plex-presence/releases/download/v0.3.1/PlexPresence-v0.3.1-screenshots.zip).
 
 **Experimental:** Discord's OAuth permission is documented, but the headless presence publishing endpoint is not a stable public API. Discord may change or disable it. Always-on mode requires your own Discord application and Social SDK; desktop mode does not. This independent community project is inspired by [phin05/discord-rich-presence-plex](https://github.com/phin05/discord-rich-presence-plex).
 
@@ -57,7 +57,7 @@ Plex sign-in and Always-on Discord authorization still use the provider's websit
 
 ## Updating the app
 
-**On v0.2.x or earlier? Download and install v0.3.0 or later once to get the update button.** Existing account settings and saved preferences are kept.
+**On v0.2.x or earlier? Download and install v0.3.1 or later once to get the update button.** Existing account settings and saved preferences are kept.
 
 1. Save any changed preferences, then click **Check for updates** near the bottom of the sidebar.
 2. The app checks this project's latest stable GitHub release and shows its version and release notes.
@@ -70,7 +70,7 @@ There are no automatic startup checks or unattended updates. Checking does not i
 
 ## Screenshots
 
-These screenshots show the native desktop interface in v0.3.0. Playback and account details are examples. Click any image to view it at full size.
+These screenshots show the native desktop interface in v0.3.1. Playback and account details are examples. Click any image to view it at full size.
 
 | First-time setup | Plex connections |
 | --- | --- |
@@ -99,7 +99,7 @@ Choose the profile used on your player, including a managed profile with a PIN.
 
 </details>
 
-[Download the full screenshot pack](https://github.com/sixtenths/plex-presence/releases/download/v0.3.0/PlexPresence-v0.3.0-screenshots.zip), including advanced connection dialogs and a compact window.
+[Download the full screenshot pack](https://github.com/sixtenths/plex-presence/releases/download/v0.3.1/PlexPresence-v0.3.1-screenshots.zip), including advanced connection dialogs and a compact window.
 
 ## First-time setup
 

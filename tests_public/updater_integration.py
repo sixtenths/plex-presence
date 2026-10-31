@@ -72,11 +72,12 @@ os._exit(0)
             # Renaming an executable is permitted while Windows still has it
             # mapped. Wait on the actual process handle before uninstalling.
             found = subprocess.check_output(["powershell", "-NoProfile", "-Command",
-                "@(Get-Process PlexPresence -ErrorAction SilentlyContinue | Where-Object { $_.Path -eq $env:PLEX_TEST_BINARY } | ForEach-Object { $_.Id }) | ConvertTo-Json -Compress"],
-                env=dict(os.environ, PLEX_TEST_BINARY=str(target / "PlexPresence.exe")), text=True)
-            pids = json.loads(found) if found.strip() else []
-            if isinstance(pids, int):
-                pids = [pids]
+                "@(Get-Process PlexPresence -ErrorAction SilentlyContinue | Select-Object Id,Path) | ConvertTo-Json -Compress"], text=True)
+            candidates = json.loads(found) if found.strip() else []
+            if isinstance(candidates, dict):
+                candidates = [candidates]
+            pids = [candidate["Id"] for candidate in candidates if candidate.get("Path")
+                    and Path(candidate["Path"]).samefile(target / "PlexPresence.exe")]
             assert pids, "Cannot identify the isolated app process"
             from plex_presence.update_helper import ParentProcess
             processes = [ParentProcess(pid) for pid in pids]
