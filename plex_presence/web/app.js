@@ -49,8 +49,6 @@ async function refresh(fill = false) {
     const plexLabels = {setup_required:'Choose a server',playing:'Playing',paused:'Paused · hidden',idle:'Waiting for playback',buffering:'Buffering · hidden',unavailable:'Server unavailable',disabled:'Sharing disabled'};
     $('plex-status').textContent = plexLabels[value.plex] || value.plex;
     $('discord-status').textContent = value.discord.message || value.discord.state;
-    $('plex-dot').className = value.plex === 'playing' ? 'good' : (value.plex === 'unavailable' ? 'warn' : '');
-    $('discord-dot').className = ['active','idle'].includes(value.discord.state) ? 'good' : '';
     const a = value.activity;
     $('live-badge').textContent = a && value.discord.state === 'active' ? 'Sharing now' : 'Not sharing';
     $('watching').textContent = a ? (a.type === 2 ? 'Listening on Plex' : 'Watching on Plex') : 'Ready when you are';

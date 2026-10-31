@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "plex-presence"
-version = "0.1.4"
+version = "0.1.5"
 description = "A local setup GUI for sharing personal Plex playback on Discord without a desktop client"
 readme = "README.md"
 requires-python = ">=3.11"
