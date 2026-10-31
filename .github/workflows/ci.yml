@@ -13,7 +13,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, ubuntu-22.04, ubuntu-22.04-arm, macos-15, macos-15-intel]
+        os: [windows-latest, ubuntu-22.04, ubuntu-22.04-arm]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -57,9 +57,49 @@ jobs:
           name: bundle-${{ matrix.os }}
           path: release/*
           if-no-files-found: error
+  macos_build:
+    name: Build universal Mac DMG
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install universal Python
+        run: |
+          curl --fail --location --retry 3 https://www.python.org/ftp/python/3.12.10/python-3.12.10-macos11.pkg -o "$RUNNER_TEMP/python.pkg"
+          echo "8373e58da4ea146b3eb1c1f9834f19a319440b6b679b06050b1f9ee3237aa8e4  $RUNNER_TEMP/python.pkg" | shasum -a 256 -c -
+          sudo installer -pkg "$RUNNER_TEMP/python.pkg" -target /
+          "/Applications/Python 3.12/Install Certificates.command"
+          /Library/Frameworks/Python.framework/Versions/3.12/bin/python3.12 -m venv .mac-build-env
+          echo "$PWD/.mac-build-env/bin" >> "$GITHUB_PATH"
+      - run: python -m pip install . pyinstaller==6.22.3
+      - run: python -m unittest discover -s tests_public -v
+      - run: python packaging/build.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bundle-macos-universal
+          path: release/*
+          if-no-files-found: error
+  macos_test:
+    name: Universal DMG on ${{ matrix.os }}
+    needs: macos_build
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-15, macos-15-intel]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        with:
+          name: bundle-macos-universal
+          path: release
+      - name: Install and test the same universal DMG
+        run: python tests_public/smoke_dmg.py
   release:
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: native
+    needs: [native, macos_test]
     runs-on: ubuntu-latest
     permissions:
       contents: write

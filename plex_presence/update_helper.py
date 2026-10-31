@@ -23,7 +23,7 @@ MAX_MEMBERS = 10_000
 EXECUTABLES = {"windows":"PlexPresence.exe", "macos":"Contents/MacOS/PlexPresence", "linux":"PlexPresence"}
 ASSETS = {
     "windows":{"PlexPresence-Setup-windows-x64.exe"},
-    "macos":{"PlexPresence-macos-x64.zip", "PlexPresence-macos-arm64.zip"},
+    "macos":{"PlexPresence-macos-x64.zip", "PlexPresence-macos-arm64.zip", "PlexPresence-macos-universal.zip"},
     "linux":{"PlexPresence-linux-x64.tar.gz", "PlexPresence-linux-arm64.tar.gz"},
 }
 

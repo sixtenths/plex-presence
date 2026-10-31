@@ -154,6 +154,7 @@ class UpdateHelperTests(unittest.TestCase):
 
     def test_macos_zip_requires_application_identity_and_preserves_modes(self):
         plan = self.plan("macos")
+        plan["archive"] = str(Path(plan["plan_dir"]) / "PlexPresence-macos-universal.zip")
         values = {"PlexPresence.app/Contents/MacOS/PlexPresence":(b"new application", 0o4755),
                   "PlexPresence.app/Contents/Info.plist":(plistlib.dumps({"CFBundleIdentifier":"io.github.sixtenths.plexpresence"}), 0o644)}
         with zipfile.ZipFile(plan["archive"], "w") as archive:

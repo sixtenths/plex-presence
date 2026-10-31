@@ -16,6 +16,8 @@ helper_output = root / "build/update-helper"
 helper_command = [sys.executable, "-m", "PyInstaller", "--noconfirm", "--clean", "--onefile", "--name", "PlexPresenceUpdater",
                   "--distpath", str(helper_output), "--workpath", str(root / "build/pyinstaller-updater"),
                   "--specpath", str(root / "build"), "--paths", str(root), str(root / "packaging/updater_entry.py")]
+if os_name == "macos":
+    helper_command[3:3] = ["--target-arch", "universal2"]
 # Keep the helper's standard input available for the shutdown handshake. The
 # application launches it with CREATE_NO_WINDOW on Windows, without a console.
 subprocess.run(helper_command, cwd=root, check=True)
@@ -35,16 +37,16 @@ if os_name in ("windows", "macos"):
     command.append("--windowed")
     command.extend(["--icon", str(root / "plex_presence/assets" / ("app.ico" if os_name == "windows" else "app.icns"))])
 if os_name == "macos":
-    command.extend(["--osx-bundle-identifier", "io.github.sixtenths.plexpresence"])
+    command.extend(["--osx-bundle-identifier", "io.github.sixtenths.plexpresence", "--target-arch", "universal2"])
+    command.extend(["--runtime-hook", str(root / "packaging/macos_runtime.py"), "--collect-data", "certifi", "--copy-metadata", "certifi"])
 command.append(str(root / "run.py"))
 subprocess.run(command, cwd=root, check=True)
 output = root / "release"
 output.mkdir(exist_ok=True)
 base = output / f"PlexPresence-{os_name}-{arch}"
 if os_name == "macos":
-    # ditto preserves the .app bundle layout and symlinks.
-    archive = Path(str(base) + ".zip")
-    subprocess.run(["ditto", "-c", "-k", "--sequesterRsrc", "--keepParent", str(root / "dist/PlexPresence.app"), str(archive)], check=True)
+    from macos import package_macos
+    archive = package_macos(root)
 elif os_name == "windows":
     compiler = shutil.which("iscc") or str(Path(os.environ.get("ProgramFiles(x86)", "C:/Program Files (x86)")) / "Inno Setup 6/ISCC.exe")
     version = tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))["project"]["version"]

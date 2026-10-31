@@ -6,11 +6,11 @@ Show your Plex playback on your own Discord profile, in a **native desktop appli
 
 Click to download the latest Windows installer directly. Run it, then open Plex Presence from your Start menu. Everything the app needs is included.
 
-[macOS and Linux downloads](https://github.com/sixtenths/plex-presence/releases/latest) · [Build status](https://github.com/sixtenths/plex-presence/actions) · [Security and privacy](SECURITY.md)
+[Download for macOS (universal DMG)](https://github.com/sixtenths/plex-presence/releases/latest/download/PlexPresence-macos-universal.dmg) · [Linux downloads](https://github.com/sixtenths/plex-presence/releases/latest) · [Build status](https://github.com/sixtenths/plex-presence/actions) · [Security and privacy](SECURITY.md)
 
-![Native Plex Presence playback view](docs/screenshots/playback.png)
+![Plex Presence app overview](docs/screenshots/readme-overview.png)
 
-The native window above is rendered with example playback data. [Explore the app screenshots below](#screenshots) or [download the full screenshot pack](https://github.com/sixtenths/plex-presence/releases/download/v0.3.1/PlexPresence-v0.3.1-screenshots.zip).
+The native window above shows the app’s first-time overview. [Explore the app screenshots below](#screenshots) or [download the full screenshot pack](https://github.com/sixtenths/plex-presence/releases/download/v0.3.1/PlexPresence-v0.3.1-screenshots.zip).
 
 **Experimental:** Discord's OAuth permission is documented, but the headless presence publishing endpoint is not a stable public API. Discord may change or disable it. Always-on mode requires your own Discord application and Social SDK; desktop mode does not. This independent community project is inspired by [phin05/discord-rich-presence-plex](https://github.com/phin05/discord-rich-presence-plex).
 
@@ -35,13 +35,12 @@ Playback is polled roughly every five seconds. Network latency, Plex session rep
 
 The app opens on **Overview**, with a compact setup checklist and a **Start setup** button for a new installation. **Walk me through it** opens the detailed guide. **Connections** contains your accounts and servers, and **Preferences** controls what you share. Choose **Setup guide** in the left sidebar for the detailed **12-part walkthrough** covering installation, Plex Home, shared servers, both Discord modes, artwork, troubleshooting, everyday use, privacy, and Raspberry Pi setup.
 
-On macOS/Linux, choose the archive for your machine and extract the **whole folder** before launching. All native downloads include Python and dependencies.
+On **macOS**, download the universal DMG, open it, and drag **PlexPresence.app** to **Applications**. Eject the disk image, then open the app from Applications. The same download runs natively on Apple Silicon and Intel Macs. On **Linux**, extract the complete archive for your machine. All native downloads include Python and dependencies.
 
 | Platform | Download | Launch |
 | --- | --- | --- |
 | Windows x64 | `PlexPresence-Setup-windows-x64.exe` | Install, then use the Plex Presence shortcut |
-| macOS Apple Silicon | `PlexPresence-macos-arm64.zip` | `PlexPresence.app` |
-| macOS Intel | `PlexPresence-macos-x64.zip` | `PlexPresence.app` |
+| macOS — Apple Silicon and Intel | [PlexPresence-macos-universal.dmg](https://github.com/sixtenths/plex-presence/releases/latest/download/PlexPresence-macos-universal.dmg) | Drag the app to Applications, eject the DMG, then launch |
 | Linux / Raspberry Pi arm64 | `PlexPresence-linux-arm64.tar.gz` | `./PlexPresence/PlexPresence` |
 | Linux x64 | `PlexPresence-linux-x64.tar.gz` | `./PlexPresence/PlexPresence` |
 
@@ -65,6 +64,8 @@ Plex sign-in and Always-on Discord authorization still use the provider's websit
 4. Wait for the app to close, install the update, and reopen. It resumes with the same settings folder and local port.
 
 Windows updates inside the app require a copy installed through the Windows installer. On macOS/Linux, the complete app must be in a folder your user can change; a read-only disk image or protected folder cannot be updated this way. The previous macOS/Linux app folder is retained as a recovery copy during replacement. Source copies can check versions and open the release page, but are not replaced by the updater. If installation is unavailable, use **Open GitHub release** and follow the manual download instructions.
+
+Mac updates use a universal ZIP containing the same app as the DMG. The older architecture-named ZIPs remain available for compatibility with earlier updaters; both contain the universal app.
 
 There are no automatic startup checks or unattended updates. Checking does not install anything; installation begins only after you choose **Download and install**. Checksums verify download integrity and do not provide code signing or notarization.
 
