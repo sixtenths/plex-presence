@@ -194,6 +194,8 @@ class NativeApp:
         self.image_pending = False
         self.image_retry_at = 0
         self.guide_page = 0
+        self.update_dialog = None
+        self.update_process = None
         self.ui_path = service.directory / "native-ui.json"
         try:
             self.ui_state = read_json(self.ui_path)
@@ -324,6 +326,7 @@ class NativeApp:
         left.addWidget(self._button("Hide window", self.hide))
         left.addWidget(self._button("Quit application", self._quit, "Quiet"))
         left.addSpacing(12)
+        left.addWidget(self._button("Check for updates", self.show_updates, "Quiet"))
         left.addWidget(self._label("Version " + __version__, "Muted"))
         outer.addWidget(sidebar)
         main = QWidget()
@@ -655,9 +658,17 @@ class NativeApp:
             self.server_combo.clear()
             for server in self.servers:
                 self.server_combo.addItem(server["name"] + (" (shared)" if not server["owned"] else ""), server["id"])
-            self.server_combo.setCurrentIndex(-1)
+            selected_id = result.get("selected_server_id")
+            selected_index = self.server_combo.findData(selected_id) if selected_id is not None else -1
+            self.server_combo.setCurrentIndex(selected_index)
             self._update_action_states()
-            if not self.servers:
+            if selected_index >= 0:
+                self._message("Your selected Plex server is ready.")
+            elif len(self.servers) == 1:
+                self.server_combo.setCurrentIndex(0)
+                self._update_action_states()
+                self._select_server()
+            elif not self.servers:
                 self._message("No accessible servers found for this account or profile.", True)
         self._action("/api/plex/servers", callback=loaded, success="Choose a Plex server from the list.")
 
@@ -858,6 +869,7 @@ class NativeApp:
             return
         if self.service.stop.is_set():
             self.closed = True
+            self.shutdown_updates()
             self.timer.stop()
             self.service.desktop_window = self.service.window_visible = False
             self.executor.shutdown(wait=False, cancel_futures=True)
@@ -903,6 +915,20 @@ class NativeApp:
     def _quit(self):
         self.service.stop.set()
         self.service.wake.set()
+
+    def show_updates(self):
+        from .update_gui import UpdateDialog
+        if self.update_dialog is None:
+            self.update_dialog = UpdateDialog(self)
+        self.update_dialog.show()
+        self.update_dialog.raise_()
+        self.update_dialog.activateWindow()
+        if not self.update_dialog.operation:
+            self.update_dialog.check()
+
+    def shutdown_updates(self, wait=False):
+        if self.update_dialog is not None:
+            self.update_dialog.shutdown(wait=wait)
 
     def hide(self):
         self.window.hide()

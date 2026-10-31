@@ -99,6 +99,11 @@ def main():
         if tray:
             tray.stop()
         instance.close()
+        if app:
+            app.shutdown_updates(wait=True)
+            update_process = getattr(app, "update_process", None)
+            if update_process is not None and update_process.stdin:
+                update_process.stdin.close()
     return 0
 
 

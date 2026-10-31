@@ -28,6 +28,9 @@ with tempfile.TemporaryDirectory(prefix="plex-installer-test-") as directory:
             env=dict(os.environ, PLEX_BUNDLE_BINARY=str(target / "PlexPresence.exe")), check=True, timeout=90)
         subprocess.run([sys.executable, str(root / "tests_public/smoke_native.py")],
             env=dict(os.environ, PLEX_BUNDLE_BINARY=str(target / "PlexPresence.exe")), check=True, timeout=90)
+        sys.path.insert(0, str(root))
+        from updater_integration import verify_installed_update
+        verify_installed_update(root, target, installer, directory)
     finally:
         uninstaller = target / "unins000.exe"
         if uninstaller.exists():

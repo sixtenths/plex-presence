@@ -68,11 +68,22 @@ async function servers() {
   const result = await post('/api/plex/servers');
   $('servers').replaceChildren(new Option(result.servers.length ? 'Choose a server' : 'No accessible servers found', ''));
   for (const server of result.servers) $('servers').add(new Option(`${server.name}${server.owned ? '' : ' (shared)'}`, server.id));
+  const selected = result.servers.find(server => server.id === result.selected_server_id);
+  if (selected) {
+    $('servers').value = selected.id;
+    message('Your selected Plex server is ready.');
+  } else if (result.servers.length === 1) {
+    $('servers').value = result.servers[0].id;
+    await post('/api/plex/select', {server_id: result.servers[0].id});
+    message('Plex server connected.');
+  } else {
+    message(result.servers.length ? 'Choose a Plex server from the list.' : 'No accessible servers found for this account or profile.', !result.servers.length);
+  }
 }
 async function checkPin() {
   if (pollingPin) return;
   pollingPin = true;
-  try { const result = await post('/api/plex/poll'); if (result.connected) { await servers(); await refresh(true); message('Plex connected. Choose your server below.'); } }
+  try { const result = await post('/api/plex/poll'); if (result.connected) { await servers(); await refresh(true); } }
   catch(error) { message(error.message, true); }
   finally { pollingPin = false; }
 }
@@ -92,6 +103,6 @@ refresh().then(async () => { if (new URLSearchParams(location.search).has('plex'
 setInterval(() => refresh(), 5000);
 
 $('home-load').onclick = e => perform(e.currentTarget, async () => { const result = await post('/api/plex/home'); $('home-profile').replaceChildren(new Option('Choose your profile', '')); for (const p of result.profiles) $('home-profile').add(new Option(p.name + (p.protected ? ' (PIN required)' : ''), p.id)); });
-$('home-form').onsubmit = e => { e.preventDefault(); perform(e.submitter, async () => { try { await post('/api/plex/profile', {profile_id:$('home-profile').value, pin:$('home-pin').value}); } finally { $('home-pin').value = ''; } await servers(); message('Profile selected. Choose one of its accessible servers.'); }); };
+$('home-form').onsubmit = e => { e.preventDefault(); perform(e.submitter, async () => { try { await post('/api/plex/profile', {profile_id:$('home-profile').value, pin:$('home-pin').value}); } finally { $('home-pin').value = ''; } await servers(); }); };
 
 $('mode-form').onsubmit = e => { e.preventDefault(); perform(e.submitter, async () => { await post('/api/discord/mode', {mode:$('discord-mode').value, client_id:$('desktop-client-id').value}); message('Connection mode saved.'); }); };

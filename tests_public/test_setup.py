@@ -145,9 +145,35 @@ class ServiceTests(unittest.TestCase):
         self.service.config["plex_account_token"] = "PRIVATE_ACCOUNT"
         with patch.object(self.service.account, "resources", return_value=[{"clientIdentifier":"server1","name":"Cinema","owned":True,"accessToken":"PRIVATE_SERVER","connections":[{"uri":"http://192.0.2.2"}]}]):
             result = self.service.action("/api/plex/servers", {})
-        self.assertEqual(result, {"servers":[{"id":"server1","name":"Cinema","owned":True}]})
+        self.assertEqual(result, {"servers":[{"id":"server1","name":"Cinema","owned":True}], "selected_server_id":None})
         with self.assertRaises(ValueError):
             self.service.action("/api/plex/select", {"server_id":"injected"})
+
+    def test_server_refresh_restores_saved_selection_without_interrupting_playback(self):
+        self.service.config.update(plex_account_token="PRIVATE_ACCOUNT", server_id="selected")
+        self.service.snapshot["activity"] = {"details":"Playing movie"}
+        resources = [{"clientIdentifier":"other", "name":"Other", "owned":True},
+                     {"clientIdentifier":"selected", "name":"Cinema", "owned":False}]
+        generation = self.service.generation
+        with patch.object(self.service.account, "resources", return_value=resources), \
+                patch.object(self.service.account, "choose") as choose, \
+                patch.object(self.service, "clear_presence") as clear, \
+                patch.object(self.service, "save") as save:
+            result = self.service.action("/api/plex/servers", {})
+        self.assertEqual(result["selected_server_id"], "selected")
+        self.assertEqual(self.service.snapshot["activity"], {"details":"Playing movie"})
+        self.assertEqual(self.service.generation, generation)
+        choose.assert_not_called()
+        clear.assert_not_called()
+        save.assert_not_called()
+
+    def test_server_refresh_does_not_restore_an_inaccessible_saved_server(self):
+        self.service.config.update(plex_account_token="PRIVATE_ACCOUNT", server_id="old-profile-server")
+        with patch.object(self.service.account, "resources", return_value=[
+                {"clientIdentifier":"accessible", "name":"Shared", "owned":False}]):
+            result = self.service.action("/api/plex/servers", {})
+        self.assertIsNone(result["selected_server_id"])
+        self.assertEqual([server["id"] for server in result["servers"]], ["accessible"])
 
     def test_paused_stopped_and_unreachable_clear_presence(self):
         publisher = Mock()

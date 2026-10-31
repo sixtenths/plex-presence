@@ -154,7 +154,9 @@ class Service:
                     raise ValueError("Sign in to Plex first, or use Advanced setup.")
                 values = self.account.resources(token)
                 self.resources = {str(r["clientIdentifier"]): r for r in values if r.get("clientIdentifier")}
-                return {"servers": [{"id": k, "name": r.get("name", "Plex server"), "owned": truth(r.get("owned"))} for k, r in self.resources.items()]}
+                selected_id = str(self.config.get("server_id") or "")
+                return {"servers": [{"id": k, "name": r.get("name", "Plex server"), "owned": truth(r.get("owned"))} for k, r in self.resources.items()],
+                        "selected_server_id": selected_id if selected_id in self.resources else None}
             if path == "/api/plex/select":
                 resource = self.resources.get(str(data.get("server_id", "")))
                 if resource is None:

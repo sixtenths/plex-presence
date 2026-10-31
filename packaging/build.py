@@ -12,10 +12,19 @@ import sys
 root = Path(__file__).resolve().parents[1]
 os_name = {"Windows": "windows", "Darwin": "macos", "Linux": "linux"}[platform.system()]
 arch = {"AMD64": "x64", "x86_64": "x64", "aarch64": "arm64", "arm64": "arm64"}.get(platform.machine(), platform.machine())
+helper_output = root / "build/update-helper"
+helper_command = [sys.executable, "-m", "PyInstaller", "--noconfirm", "--clean", "--onefile", "--name", "PlexPresenceUpdater",
+                  "--distpath", str(helper_output), "--workpath", str(root / "build/pyinstaller-updater"),
+                  "--specpath", str(root / "build"), "--paths", str(root), str(root / "packaging/updater_entry.py")]
+# Keep the helper's standard input available for the shutdown handshake. The
+# application launches it with CREATE_NO_WINDOW on Windows, without a console.
+subprocess.run(helper_command, cwd=root, check=True)
+helper = helper_output / ("PlexPresenceUpdater.exe" if os_name == "windows" else "PlexPresenceUpdater")
 command = [sys.executable, "-m", "PyInstaller", "--noconfirm", "--clean", "--onedir", "--name", "PlexPresence",
            "--add-data", f"{root / 'plex_presence/web'}:plex_presence/web", "--add-data", f"{root / 'LICENSE'}:.",
            "--add-data", f"{root / 'NOTICE.md'}:.", "--distpath", "dist", "--workpath", "build/pyinstaller", "--specpath", "build"]
 command.extend(["--add-data", f"{root / 'plex_presence/assets'}:plex_presence/assets"])
+command.extend(["--add-binary", f"{helper}:plex_presence/assets"])
 command.extend(["--add-data", f"{root / 'THIRD_PARTY_LICENSES'}:THIRD_PARTY_LICENSES"])
 # Some Python distributions load extra certificate policy data beside ssl.py.
 # Keep that runtime file beside the frozen module so TLS context creation works.

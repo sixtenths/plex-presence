@@ -189,3 +189,32 @@ class NativeWindowTests(unittest.TestCase):
         self.app._status(status)
         self.assertFalse(self.app.plex_disconnect_button.isHidden())
         self.assertFalse(self.app.plex_check_button.isHidden())
+
+    def test_server_refresh_restores_saved_selection_without_reconnecting(self):
+        servers = [{"id":"one", "name":"First", "owned":True},
+                   {"id":"two", "name":"Shared", "owned":False}]
+        with patch.object(self.app, "_action") as action:
+            self.app._load_servers()
+            action.call_args.kwargs["callback"]({"servers":servers, "selected_server_id":"two"})
+        self.assertEqual(self.app.server_combo.currentData(), "two")
+        self.assertEqual(action.call_count, 1)
+        self.assertEqual(action.call_args.args[0], "/api/plex/servers")
+
+    def test_server_refresh_connects_the_only_available_server(self):
+        server = {"id":"shared", "name":"Shared cinema", "owned":False}
+        with patch.object(self.app, "_action") as action:
+            self.app._load_servers()
+            action.call_args.kwargs["callback"]({"servers":[server], "selected_server_id":None})
+        self.assertEqual(self.app.server_combo.currentData(), "shared")
+        self.assertEqual(action.call_count, 2)
+        self.assertEqual(action.call_args.args, ("/api/plex/select", {"server_id":"shared"}))
+
+    def test_server_refresh_leaves_multiple_servers_for_the_user_to_choose(self):
+        servers = [{"id":"one", "name":"Owned", "owned":True},
+                   {"id":"two", "name":"Shared", "owned":False}]
+        with patch.object(self.app, "_action") as action:
+            self.app._load_servers()
+            action.call_args.kwargs["callback"]({"servers":servers, "selected_server_id":None})
+        self.assertEqual(self.app.server_combo.currentIndex(), -1)
+        self.assertIsNone(self.app.server_combo.currentData())
+        self.assertEqual(action.call_count, 1)
