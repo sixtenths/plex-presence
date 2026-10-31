@@ -133,7 +133,7 @@ Do not expose the setup port to the internet. If 8765 is busy, use `--port 8790`
 | macOS | `~/Library/Application Support/PlexPresence` |
 | Linux | `$XDG_CONFIG_HOME/plex-presence`, or `~/.config/plex-presence` |
 
-Credentials are local plaintext files protected by user/file permissions, not a keychain. Never share them. There is no telemetry or central project backend. Optional artwork sends public poster URLs through [images.weserv.nl](https://images.weserv.nl/); default mode does not upload Plex artwork. Enable **Use my selected Plex posters** to use the exact poster selected on your server: it uploads that image to Litterbox for one hour, then fits it through the image proxy. Anyone with the image URL can view it, and Discord/proxy caches may last longer. No Plex credentials or server addresses are shared. Disable artwork to avoid the proxy. If no safe public poster exists, presence works without an image.
+Credentials are local plaintext files protected by user/file permissions, not a keychain. Never share them. There is no telemetry or central project backend. Optional artwork sends public poster URLs through [images.weserv.nl](https://images.weserv.nl/); default mode does not upload Plex artwork. Enable **Use my selected Plex posters** to use the exact poster selected on your server: it uploads that image to Litterbox (or TempFile.org if Litterbox is unavailable) for one hour, then fits it through the image proxy. Anyone with the image URL can view it, and Discord/proxy caches may last longer. No Plex credentials or server addresses are shared. Disable artwork to avoid the proxy. If no safe public poster exists, presence works without an image.
 
 ## Troubleshooting
 

@@ -1,5 +1,6 @@
 """Opt-in sharing of the server's actual selected poster through a 1-hour upload."""
 import hashlib
+import json
 import re
 import time
 import uuid
@@ -9,7 +10,7 @@ from .network import NoRedirect
 
 
 class SelectedArtworkResolver(ArtworkResolver):
-    CDN_HOSTS = ArtworkResolver.CDN_HOSTS | {"litter.catbox.moe"}
+    CDN_HOSTS = ArtworkResolver.CDN_HOSTS | {"litter.catbox.moe", "tempfile.org"}
     SUCCESS_TTL = 300
     MAX_IMAGE = 8 * 1024 * 1024
 
@@ -30,6 +31,32 @@ class SelectedArtworkResolver(ArtworkResolver):
         raise ValueError("Unsupported poster image")
 
     def _upload(self, raw):
+        try:
+            return self._upload_litterbox(raw)
+        except OSError:
+            # Preserve the same selected image and one-hour expiry during an outage.
+            return self._upload_tempfile(raw)
+
+    def _upload_tempfile(self, raw):
+        mime, suffix = self.image_type(raw)
+        boundary = uuid.uuid4().hex
+        body = (f'--{boundary}\r\nContent-Disposition: form-data; name="expiryHours"\r\n\r\n1\r\n'
+                f'--{boundary}\r\nContent-Disposition: form-data; name="files"; filename="poster.{suffix}"\r\n'
+                f'Content-Type: {mime}\r\n\r\n').encode() + raw + f'\r\n--{boundary}--\r\n'.encode()
+        request = Request("https://tempfile.org/api/upload/local", data=body,
+                          headers={"Content-Type": "multipart/form-data; boundary=" + boundary, "User-Agent": "PlexPresence/0.1.6"})
+        with build_opener(NoRedirect()).open(request, timeout=15) as response:
+            result = json.loads(response.read(4096))
+        files = result.get("files") if isinstance(result, dict) else None
+        if not isinstance(result, dict) or not result.get("success") or not isinstance(files, list) or len(files) != 1:
+            raise ValueError("Invalid temporary poster upload response")
+        item = files[0]
+        identifier = item.get("id", "") if isinstance(item, dict) else ""
+        if not isinstance(identifier, str) or not re.fullmatch(r"[A-Za-z0-9_-]{6,80}", identifier):
+            raise ValueError("Invalid temporary poster upload response")
+        return "https://tempfile.org/" + identifier + "/preview"
+
+    def _upload_litterbox(self, raw):
         mime, suffix = self.image_type(raw)
         boundary = uuid.uuid4().hex
         parts = []
@@ -38,7 +65,7 @@ class SelectedArtworkResolver(ArtworkResolver):
         parts.append((f'--{boundary}\r\nContent-Disposition: form-data; name="fileToUpload"; filename="poster.{suffix}"\r\nContent-Type: {mime}\r\n\r\n').encode() + raw + b'\r\n')
         parts.append((f'--{boundary}--\r\n').encode())
         request = Request("https://litterbox.catbox.moe/resources/internals/api.php", data=b"".join(parts),
-                          headers={"Content-Type": "multipart/form-data; boundary=" + boundary})
+                          headers={"Content-Type": "multipart/form-data; boundary=" + boundary, "User-Agent": "PlexPresence/0.1.6"})
         with build_opener(NoRedirect()).open(request, timeout=15) as response:
             url = response.read(1024).decode("ascii").strip()
         if not re.fullmatch(r"https://litter\.catbox\.moe/[A-Za-z0-9]+\.(jpg|jpeg|png|gif|webp)", url):
