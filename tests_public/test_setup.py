@@ -5,6 +5,7 @@ import json
 import tempfile
 import threading
 import unittest
+from pathlib import Path
 from unittest.mock import Mock, patch
 from urllib.error import HTTPError
 from urllib.parse import parse_qs, urlsplit
@@ -15,6 +16,8 @@ from plex_presence.plex_account import PlexAccount
 from plex_presence.network import NoRedirect, server_url
 from plex_presence.server import make_server
 from plex_presence.service import Service
+from plex_presence.artwork import ArtworkResolver
+from plex_presence.selected_artwork import SelectedArtworkResolver
 from plex_presence.storage import save_private, read_json
 from plex_presence.plex import PlexError
 
@@ -95,6 +98,8 @@ class ServiceTests(unittest.TestCase):
 
     def test_fresh_install_is_empty_and_unique(self):
         status = self.service.status()
+        self.assertTrue(status["settings"]["use_plex_artwork"])
+        self.assertTrue(read_json(self.service.config_path)["use_plex_artwork"])
         self.assertFalse(status["plex_connected"])
         self.assertFalse(status["discord_connected"])
         self.assertEqual(status["settings"]["discord_client_id"], "")
@@ -103,6 +108,20 @@ class ServiceTests(unittest.TestCase):
         self.assertEqual(first, Service(self.directory.name).config["plex_client_identifier"])
         with tempfile.TemporaryDirectory() as other:
             self.assertNotEqual(first, Service(other).config["plex_client_identifier"])
+
+    def test_poster_default_preserves_saved_choice_and_selects_matching_resolver(self):
+        for saved in (None, False, True):
+            with self.subTest(saved=saved), tempfile.TemporaryDirectory() as directory:
+                config = {"plex_url":"http://192.0.2.1:32400", "plex_token":"TEST_TOKEN", "plex_username":"viewer"}
+                if saved is not None:
+                    config["use_plex_artwork"] = saved
+                path = Path(directory) / "config.json"
+                save_private(path, config)
+                service = Service(directory)
+                expected = saved is not False
+                self.assertEqual(service.status()["settings"]["use_plex_artwork"], expected)
+                self.assertEqual(read_json(path)["use_plex_artwork"], expected)
+                self.assertIs(type(service.artwork), SelectedArtworkResolver if expected else ArtworkResolver)
 
     def test_public_status_never_exposes_tokens(self):
         self.service.config.update(plex_token="PRIVATE_PLEX", plex_account_token="PRIVATE_ACCOUNT")

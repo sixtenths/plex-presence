@@ -6,7 +6,7 @@ Show your Plex playback on your own Discord profile, in a **native desktop appli
 
 ![Native Plex Presence playback view](docs/screenshots/playback.png)
 
-The native window above is rendered with example playback data. [Explore the app screenshots below](#screenshots) or [download the full screenshot pack](https://github.com/sixtenths/plex-presence/releases/download/v0.2.0/PlexPresence-v0.2.0-screenshots.zip).
+The native window above is rendered with example playback data. [Explore the app screenshots below](#screenshots) or [download the full screenshot pack](https://github.com/sixtenths/plex-presence/releases/download/v0.2.1/PlexPresence-v0.2.1-screenshots.zip).
 
 **Experimental:** Discord's OAuth permission is documented, but the headless presence publishing endpoint is not a stable public API. Discord may change or disable it. Always-on mode requires your own Discord application and Social SDK; desktop mode does not. This independent community project is inspired by [phin05/discord-rich-presence-plex](https://github.com/phin05/discord-rich-presence-plex).
 
@@ -16,7 +16,7 @@ The native window above is rendered with example playback data. [Explore the app
 - Keep watching in the background when the window is closed; reopen it from the shortcut or Windows tray icon.
 - Sign in to Plex and choose your own server, or enter an address and token using **Direct connection…**.
 - Select the Plex username to track and authorize your own Discord account.
-- Show movies, episodes, and music, with optional public artwork and playback progress.
+- Show movies, episodes, and music, with your selected Plex artwork and playback progress enabled by default. Both can be turned off in Preferences.
 - Shows tagged **Anime** in Plex genres or labels use **Episode 42** instead of **S03E01**. Numbering follows Plex's regular-season order, excludes season-zero specials, and uses an explicit absolute index when available. It also detects shows whose episode indices already continue across seasons, avoiding double counting. Otherwise it adds the highest episode index in each earlier season; incomplete libraries or alternative ordering can differ from an external anime database. Unavailable metadata or missing whole earlier seasons retains the standard season/episode label.
 - **Clear presence on pause, stop, buffering, or loss of server access.** Resume restores it. No paused activity or paused timer.
 - Save settings locally and refresh Discord authorization automatically.
@@ -52,7 +52,7 @@ Plex sign-in and Always-on Discord authorization still use the provider's websit
 
 ## Screenshots
 
-These screenshots show the native desktop interface in v0.2.0. Playback and account details are examples. Click any image to view it at full size.
+These screenshots show the native desktop interface in v0.2.1. Playback and account details are examples. Click any image to view it at full size.
 
 | First-time setup | Plex connections |
 | --- | --- |
@@ -77,7 +77,7 @@ Choose the profile used on your player, including a managed profile with a PIN.
 
 </details>
 
-[Download all 12 screenshots](https://github.com/sixtenths/plex-presence/releases/download/v0.2.0/PlexPresence-v0.2.0-screenshots.zip), including advanced connection dialogs and a compact window.
+[Download all 12 screenshots](https://github.com/sixtenths/plex-presence/releases/download/v0.2.1/PlexPresence-v0.2.1-screenshots.zip), including advanced connection dialogs and a compact window.
 
 ## First-time setup
 
@@ -117,6 +117,8 @@ Every install has separate credentials. Nothing connects to the project owner's 
 ### 3. Playback
 
 Open **Preferences**, save your choices, and start Plex playback. The desktop window shows the Plex state and whether Discord accepted an update. Pause or stop to clear it. Public posters are fitted inside a square canvas to preserve proportions; Discord controls its card layout.
+
+**New in v0.2.1:** **Use your Plex artwork** is enabled for new installations and configurations that do not yet have this setting. The app uses the poster selected on your Plex server. Existing saved choices are preserved, including an explicit off setting. Turn it off in Preferences to use public-provider artwork instead, or turn off **Show artwork** to share no image. See the image-upload details below.
 
 ## Run from source
 
@@ -170,7 +172,7 @@ Do not expose the setup port to the internet. If 8765 is busy, use `--port 8790`
 | macOS | `~/Library/Application Support/PlexPresence` |
 | Linux | `$XDG_CONFIG_HOME/plex-presence`, or `~/.config/plex-presence` |
 
-Credentials are local plaintext files protected by user/file permissions, not a keychain. Never share them. There is no telemetry or central project backend. Optional artwork sends public poster URLs through [images.weserv.nl](https://images.weserv.nl/); default mode does not upload Plex artwork. Enable **Use your Plex artwork** to use the exact poster selected on your server: it uploads that image to Litterbox (or TempFile.org if Litterbox is unavailable) for one hour, then fits it through the image proxy. Anyone with the image URL can view it, and Discord/proxy caches may last longer. No Plex credentials or server addresses are shared. Disable artwork to avoid the proxy. If no safe public poster exists, presence works without an image.
+Credentials are local plaintext files protected by user/file permissions, not a keychain. Never share them. There is no telemetry or central project backend. **Use your Plex artwork** is enabled by default when no saved choice exists. It uploads the exact poster selected on your Plex server to Litterbox (or TempFile.org if Litterbox is unavailable) for one hour, then fits it through [images.weserv.nl](https://images.weserv.nl/). Anyone with the image URL can view it, and Discord/proxy caches may last longer. Plex credentials and server addresses are never sent to these image services. Turn off **Use your Plex artwork** to use public-provider poster URLs without uploading the server's selected image, or turn off **Show artwork** to avoid artwork requests entirely. Existing saved off settings remain off after updating. If artwork is unavailable, presence works without an image.
 
 ## Troubleshooting
 
@@ -183,7 +185,7 @@ Credentials are local plaintext files protected by user/file permissions, not a 
 | Paused activity briefly lingers | Allow a poll and Discord refresh; check GUI retry status. |
 | Cannot start | Port or data directory already in use, file permissions, or missing graphical desktop/Qt system libraries. Use `--no-browser` for headless systems. |
 | Window disappeared after closing it | The watcher stays running. Launch the shortcut or use the Windows tray menu to reopen settings. |
-| Missing image | Artwork enabled and a supported public poster exists. |
+| Missing image | Show artwork enabled, selected Plex poster available, and image host/proxy reachable. If using public-provider artwork instead, a supported public poster must exist. |
 | Discord asks to reconnect | Disconnect and authorize again; verify Social SDK is enabled. |
 
 ## Development

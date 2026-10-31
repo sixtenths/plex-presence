@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "plex-presence"
-version = "0.2.0"
+version = "0.2.1"
 description = "A native desktop app for sharing Plex playback on Discord, with optional headless operation"
 readme = "README.md"
 requires-python = ">=3.11"

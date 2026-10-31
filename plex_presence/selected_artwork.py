@@ -1,4 +1,4 @@
-"""Opt-in sharing of the server's actual selected poster through a 1-hour upload."""
+"""Share the server's selected poster through a 1-hour upload when enabled."""
 import hashlib
 import json
 import re

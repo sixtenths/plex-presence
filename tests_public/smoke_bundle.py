@@ -45,6 +45,7 @@ with tempfile.TemporaryDirectory() as directory:
                     raise RuntimeError("Packaged app did not start")
                 time.sleep(.5)
         assert not status["plex_connected"] and status["settings"]["discord_mode"] == "desktop"
+        assert status["settings"]["use_plex_artwork"] is True
         for path, text in (("/", b"Choose your Plex"), ("/app.js", b"api/plex/connect"), ("/style.css", b".card"), ("/guide.html", b"setup-guide"), ("/guide.js", b"showModal"), ("/guide.css", b"guide-body")):
             with urlopen(origin + path, timeout=3) as r:
                 assert text in r.read(), path

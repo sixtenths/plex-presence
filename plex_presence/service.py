@@ -25,7 +25,7 @@ class Service:
         self.config = read_json(self.config_path)
         for key in ("enabled", "artwork_enabled", "show_progress"):
             self.config.setdefault(key, True)
-        self.config.setdefault("use_plex_artwork", False)
+        self.config.setdefault("use_plex_artwork", True)
         # Preserve existing headless installs; new users get the simple desktop path.
         self.config.setdefault("discord_mode", "headless" if self.token_path.exists() or self.config.get("discord_client_id") else "desktop")
         self.config.setdefault("plex_client_identifier", secrets.token_hex(16))
