@@ -47,4 +47,4 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           RELEASE_TAG: ${{ github.ref_name }}
-        run: gh release create "$RELEASE_TAG" release/* --title "Plex Presence $RELEASE_TAG" --notes "Experimental client-free Plex presence with a local setup GUI. Download the archive for your OS and architecture, extract it, and launch PlexPresence. See the README for Discord application setup, unsigned-build notes, and privacy details." --prerelease --verify-tag
+        run: gh release create "$RELEASE_TAG" release/* --title "Plex Presence $RELEASE_TAG" --notes "Experimental client-free Plex presence with a local setup GUI. Download the archive for your OS and architecture, extract it, and launch PlexPresence. See the README for Discord application setup, unsigned-build notes, and privacy details." --verify-tag

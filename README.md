@@ -141,7 +141,7 @@ python packaging/build.py
 python tests_public/smoke_bundle.py
 ```
 
-Build on the target OS and architecture. GitHub Actions runs tests, packages each app, then launches each native bundle to test its GUI API and shutdown. Version tags publish prerelease downloads and SHA-256 checksums only after every native job passes. Tests use mocked account responses and never require live credentials.
+Build on the target OS and architecture. GitHub Actions runs tests, packages each app, then launches each native bundle to test its GUI API and shutdown. Version tags publish release downloads and SHA-256 checksums only after every native job passes. Tests use mocked account responses and never require live credentials.
 
 ## License
 
