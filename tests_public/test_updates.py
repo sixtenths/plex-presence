@@ -39,8 +39,8 @@ class UpdateTests(unittest.TestCase):
             with self.subTest(value=value), self.assertRaises(UpdateError):
                 version_tuple(value)
         self.assertEqual(platform_asset("Windows", "AMD64")[1], self.manager.asset_name)
-        self.assertEqual(platform_asset("Darwin", "arm64")[1], "PlexPresence-macos-universal.zip")
-        self.assertEqual(platform_asset("Darwin", "x86_64")[1], "PlexPresence-macos-universal.zip")
+        self.assertEqual(platform_asset("Darwin", "arm64")[1], "PlexPresence-macos-universal.dmg")
+        self.assertEqual(platform_asset("Darwin", "x86_64")[1], "PlexPresence-macos-universal.dmg")
         self.assertEqual(platform_asset("Linux", "aarch64")[1], "PlexPresence-linux-arm64.tar.gz")
         self.assertEqual(platform_asset("Linux", "armv7l"), (None, None))
 

@@ -23,7 +23,7 @@ MAX_MEMBERS = 10_000
 EXECUTABLES = {"windows":"PlexPresence.exe", "macos":"Contents/MacOS/PlexPresence", "linux":"PlexPresence"}
 ASSETS = {
     "windows":{"PlexPresence-Setup-windows-x64.exe"},
-    "macos":{"PlexPresence-macos-x64.zip", "PlexPresence-macos-arm64.zip", "PlexPresence-macos-universal.zip"},
+    "macos":{"PlexPresence-macos-universal.dmg"},
     "linux":{"PlexPresence-linux-x64.tar.gz", "PlexPresence-linux-arm64.tar.gz"},
 }
 
@@ -258,6 +258,43 @@ def _child_environment():
     return environment
 
 
+def _extract_dmg(archive, destination):
+    """Mount a verified image read-only and copy only its bounded app bundle."""
+    with tempfile.TemporaryDirectory(prefix="plex-update-mount-") as folder:
+        mount = Path(folder) / "volume"
+        environment = _child_environment()
+        try:
+            subprocess.run(["/usr/bin/hdiutil", "attach", "-readonly", "-nobrowse", "-mountpoint", str(mount), str(archive)],
+                           check=True, timeout=90, stdout=subprocess.DEVNULL, env=environment)
+            app = mount / "PlexPresence.app"
+            if not app.is_dir() or app.is_symlink():
+                raise ValueError("The disk image is missing its application.")
+            size = count = 0
+            for path in app.rglob("*"):
+                count += 1
+                if count > MAX_MEMBERS:
+                    raise ValueError("The update contains too many files.")
+                if path.is_symlink():
+                    if not _within(path.resolve(strict=True), app.resolve()):
+                        raise ValueError("The update contains a link outside its application.")
+                elif path.is_file():
+                    size += path.stat().st_size
+                    if size > MAX_EXPANDED:
+                        raise ValueError("The update is too large.")
+                elif not path.is_dir():
+                    raise ValueError("The update contains an unsupported file type.")
+            _bundle(app, "macos")
+            prepared = destination / "PlexPresence.app"
+            subprocess.run(["/usr/bin/ditto", str(app), str(prepared)], check=True, timeout=120, env=environment)
+            subprocess.run(["/usr/bin/codesign", "--verify", "--deep", "--strict", str(prepared)], check=True, timeout=60, env=environment)
+            _bundle(prepared, "macos")
+            return prepared
+        finally:
+            if os.path.ismount(mount):
+                subprocess.run(["/usr/bin/hdiutil", "detach", str(mount)], check=True, timeout=30,
+                               stdout=subprocess.DEVNULL, env=environment)
+
+
 def apply_update(plan):
     """Install the verified update after the caller has ensured the old process exited."""
     plan = validate_plan(plan)
@@ -273,7 +310,7 @@ def apply_update(plan):
     staging = Path(tempfile.mkdtemp(prefix=".plex-presence-update-", dir=root.parent)).resolve()
     if staging.parent != root.parent:
         raise ValueError("The update staging folder is invalid.")
-    prepared = _extract(archive, staging, plan["platform"])
+    prepared = _extract_dmg(archive, staging) if plan["platform"] == "macos" else _extract(archive, staging, plan["platform"])
     backup = root.with_name(root.name + ".previous-" + uuid.uuid4().hex)
     if backup.exists() or backup.parent != root.parent:
         raise ValueError("The application backup folder is unavailable.")

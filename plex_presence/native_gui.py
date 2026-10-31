@@ -471,6 +471,9 @@ class NativeApp:
         self.mode.currentIndexChanged.connect(self._mode_fields)
         card.addWidget(self.mode)
         card.addWidget(self._row(self._button("Apply connection mode", self._apply_mode, action=True), stretch=True))
+        card.addWidget(self._label("Turn on Discord activity sharing", "CardTitle"))
+        card.addWidget(self._label("In Discord, open User Settings → Activity Privacy / Activity Sharing and turn on Share my activity. Otherwise Discord can hide your playback even when Plex Presence says it is sharing.", "Muted"))
+        card.addWidget(self._row(self._button("Activity sharing help", lambda: self._external("https://support.discord.com/hc/en-us/articles/7931156448919-Activity-Sharing-on-Discord-FAQ"), "Quiet"), stretch=True))
         self.desktop_id = ""
         self.desktop_help = QWidget()
         desktop = self._layout(self.desktop_help, spacing=12)

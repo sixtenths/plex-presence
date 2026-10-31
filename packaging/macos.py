@@ -1,7 +1,6 @@
-"""Build a drag-to-Applications DMG and compatible updater ZIPs from one universal app."""
+"""Build a universal drag-to-Applications DMG, also used by the updater."""
 import hashlib
 from pathlib import Path
-import shutil
 import subprocess
 import tempfile
 
@@ -28,15 +27,6 @@ def package_macos(root):
     app = root / 'dist/PlexPresence.app'
     output = root / 'release'
     verify_universal_bundle(app)
-    archive = output / 'PlexPresence-macos-universal.zip'
-    subprocess.run(['ditto', '-c', '-k', '--sequesterRsrc', '--keepParent', str(app), str(archive)], check=True)
-    # Existing clients request architecture-named ZIPs. Both now contain the
-    # exact same universal app, so those clients can update without a reinstall.
-    assets = [archive]
-    for arch in ('arm64', 'x64'):
-        alias = output / f'PlexPresence-macos-{arch}.zip'
-        shutil.copy2(archive, alias)
-        assets.append(alias)
     dmg = output / 'PlexPresence-macos-universal.dmg'
     with tempfile.TemporaryDirectory(prefix='plex-dmg-') as folder:
         stage = Path(folder)
@@ -48,7 +38,5 @@ def package_macos(root):
             'This app works natively on Apple Silicon and Intel Macs.\n', encoding='utf-8')
         subprocess.run(['hdiutil', 'create', '-ov', '-volname', 'Plex Presence', '-fs', 'HFS+',
                         '-srcfolder', str(stage), '-format', 'UDZO', str(dmg)], check=True)
-    assets.append(dmg)
-    for asset in assets:
-        Path(str(asset) + '.sha256').write_text(hashlib.sha256(asset.read_bytes()).hexdigest() + '  ' + asset.name + '\n', encoding='ascii')
+    Path(str(dmg) + '.sha256').write_text(hashlib.sha256(dmg.read_bytes()).hexdigest() + '  ' + dmg.name + '\n', encoding='ascii')
     return dmg

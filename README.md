@@ -10,7 +10,7 @@ Click to download the latest Windows installer directly. Run it, then open Plex 
 
 ![Plex Presence app overview](docs/screenshots/readme-overview.png)
 
-The native window above shows the app’s first-time overview. [Explore the app screenshots below](#screenshots) or [download the full screenshot pack](https://github.com/sixtenths/plex-presence/releases/download/v0.3.1/PlexPresence-v0.3.1-screenshots.zip).
+The native window above shows the app’s first-time overview. [Explore the app screenshots below](#screenshots).
 
 **Experimental:** Discord's OAuth permission is documented, but the headless presence publishing endpoint is not a stable public API. Discord may change or disable it. Always-on mode requires your own Discord application and Social SDK; desktop mode does not. This independent community project is inspired by [phin05/discord-rich-presence-plex](https://github.com/phin05/discord-rich-presence-plex).
 
@@ -65,7 +65,7 @@ Plex sign-in and Always-on Discord authorization still use the provider's websit
 
 Windows updates inside the app require a copy installed through the Windows installer. On macOS/Linux, the complete app must be in a folder your user can change; a read-only disk image or protected folder cannot be updated this way. The previous macOS/Linux app folder is retained as a recovery copy during replacement. Source copies can check versions and open the release page, but are not replaced by the updater. If installation is unavailable, use **Open GitHub release** and follow the manual download instructions.
 
-Mac updates use a universal ZIP containing the same app as the DMG. The older architecture-named ZIPs remain available for compatibility with earlier updaters; both contain the universal app.
+**Mac users on v0.3.3 or earlier:** install v0.3.4 or later from the DMG once. Older Mac updaters require ZIP files, which are no longer distributed. New versions use the DMG directly for in-app updates.
 
 There are no automatic startup checks or unattended updates. Checking does not install anything; installation begins only after you choose **Download and install**. Checksums verify download integrity and do not provide code signing or notarization.
 
@@ -100,7 +100,7 @@ Choose the profile used on your player, including a managed profile with a PIN.
 
 </details>
 
-[Download the full screenshot pack](https://github.com/sixtenths/plex-presence/releases/download/v0.3.1/PlexPresence-v0.3.1-screenshots.zip), including advanced connection dialogs and a compact window.
+[Browse all screenshots](docs/screenshots).
 
 ## First-time setup
 
@@ -111,6 +111,8 @@ Choose **Connections** in the left sidebar, then click **Connect Plex**, sign in
 Enter the Plex username to track. **Find active users** suggests names from current playback; start a stream if a name is missing, or type the exact username yourself. In shared-server mode the tracked user is locked to the signed-in profile. After connecting or restarting the app, start or resume playback so Plex sends a fresh event. You still need library access and a reachable server; an offline server or denied notification connection cannot be bypassed.
 
 **Connections → Direct connection…** accepts your server URL, token, and username. Prefer HTTPS. Local HTTP sends the token unencrypted on your network. Never put a token in the URL or a public issue.
+
+**Turn on Discord activity sharing:** in Discord, open **User Settings → Activity Privacy / Activity Sharing** and enable **Share my activity**. Discord can hide playback even when Plex Presence reports that it is sharing.
 
 ### Plex Home / managed profiles
 

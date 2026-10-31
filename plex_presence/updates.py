@@ -63,7 +63,7 @@ def platform_asset(system=None, machine=None):
     if system in ("Darwin", "Linux") and arch:
         name = "macos" if system == "Darwin" else "linux"
         if name == "macos":
-            return name, "PlexPresence-macos-universal.zip"
+            return name, "PlexPresence-macos-universal.dmg"
         suffix = ".zip" if name == "macos" else ".tar.gz"
         return name, "PlexPresence-" + name + "-" + arch + suffix
     return None, None

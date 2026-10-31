@@ -67,7 +67,7 @@ with tempfile.TemporaryDirectory(prefix="plex-updater-smoke-") as folder:
     copied = staged / helper_name
     shutil.copy2(bundled, copied)
     copied.chmod(0o700)
-    asset = staged / {"windows":"PlexPresence-Setup-windows-x64.exe", "macos":"PlexPresence-macos-x64.zip", "linux":"PlexPresence-linux-x64.tar.gz"}[host]
+    asset = staged / {"windows":"PlexPresence-Setup-windows-x64.exe", "macos":"PlexPresence-macos-universal.dmg", "linux":"PlexPresence-linux-x64.tar.gz"}[host]
     asset.write_bytes(b"Deliberately invalid fixture: never install or execute an actual update.")
     plan = {"schema":1, "platform":host, "current_root":str(current), "executable":entry,
             "archive":str(asset), "sha256":hashlib.sha256(asset.read_bytes()).hexdigest(), "data_dir":str(data),
@@ -107,7 +107,7 @@ if host != "windows":
     from plex_presence import __version__
     architecture = {"arm64":"arm64", "aarch64":"arm64", "x86_64":"x64"}[platform.machine()]
     suffix = ".zip" if host == "macos" else ".tar.gz"
-    release_asset = root / "release" / ("PlexPresence-" + host + "-" + architecture + suffix)
+    release_asset = root / "release" / ("PlexPresence-macos-universal.dmg" if host == "macos" else "PlexPresence-" + host + "-" + architecture + suffix)
     with tempfile.TemporaryDirectory(prefix="plex-archive-update-") as folder:
         base = Path(folder).resolve()
         name = "PlexPresence.app" if host == "macos" else "PlexPresence"

@@ -152,9 +152,8 @@ class UpdateHelperTests(unittest.TestCase):
             helper.apply_update(plan)
         self.assertEqual((Path(plan["current_root"]) / "PlexPresence").read_bytes(), b"old application")
 
-    def test_macos_zip_requires_application_identity_and_preserves_modes(self):
+    def test_macos_replacement_preserves_identity_and_modes(self):
         plan = self.plan("macos")
-        plan["archive"] = str(Path(plan["plan_dir"]) / "PlexPresence-macos-universal.zip")
         values = {"PlexPresence.app/Contents/MacOS/PlexPresence":(b"new application", 0o4755),
                   "PlexPresence.app/Contents/Info.plist":(plistlib.dumps({"CFBundleIdentifier":"io.github.sixtenths.plexpresence"}), 0o644)}
         with zipfile.ZipFile(plan["archive"], "w") as archive:
@@ -163,10 +162,25 @@ class UpdateHelperTests(unittest.TestCase):
                 info.external_attr = (stat.S_IFREG | mode) << 16
                 archive.writestr(info, content)
         plan["sha256"] = hashlib.sha256(Path(plan["archive"]).read_bytes()).hexdigest()
-        helper.apply_update(plan)
+        # A ZIP fixture stands in for the mounted image's copied bundle here;
+        # the actual DMG is exercised on both architectures by smoke_updater.
+        with patch.object(helper, "_extract_dmg", side_effect=lambda archive, destination: helper._extract(archive, destination, "macos")):
+            helper.apply_update(plan)
         entry = Path(plan["current_root"]) / plan["executable"]
         self.assertEqual(entry.read_bytes(), b"new application")
         self.assertFalse(entry.stat().st_mode & stat.S_ISUID)
+
+    def test_failed_dmg_mount_does_not_replace_existing_app(self):
+        plan = self.plan("macos")
+        with patch.object(helper, "_extract_dmg", side_effect=OSError("mount failed")), self.assertRaises(OSError):
+            helper.apply_update(plan)
+        self.assertEqual((Path(plan["current_root"]) / plan["executable"]).read_bytes(), b"old application")
+
+    def test_invalid_mounted_dmg_is_detached_without_copying(self):
+        with patch.object(helper, "_child_environment", return_value={}), patch.object(helper.subprocess, "run") as run, patch.object(helper.os.path, "ismount", return_value=True), self.assertRaisesRegex(ValueError, "missing its application"):
+            helper._extract_dmg(self.base / 'invalid.dmg', self.base / 'destination')
+        commands = [call.args[0] for call in run.call_args_list]
+        self.assertEqual([command[1] for command in commands], ['attach', 'detach'])
 
     @unittest.skipIf(os.name == "nt", "Creating symlinks can require Windows administrator rights")
     def test_valid_internal_archive_symlink_survives(self):
